@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -55,9 +56,12 @@ public class AutoAim {
         double closestDistance = Double.MAX_VALUE;
 
         List<Entity> entities = mc.level.getEntities(mc.player, mc.player.getBoundingBox().inflate(AIM_DISTANCE), entity ->
-                (aimAtVillagers && entity instanceof Villager) ||
-                        (aimAtPlayers && entity instanceof net.minecraft.client.player.AbstractClientPlayer) &&
-                                entity != mc.player);
+                !entity.isRemoved() &&
+                        entity instanceof LivingEntity livingEntity && !livingEntity.isDeadOrDying() &&
+                        ((aimAtVillagers && entity instanceof Villager) ||
+                                (aimAtPlayers && entity instanceof net.minecraft.client.player.AbstractClientPlayer &&
+                                        entity != mc.player))
+        );
 
         for (Entity entity : entities) {
             double distance = mc.player.distanceTo(entity);
