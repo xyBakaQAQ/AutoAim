@@ -1,0 +1,21 @@
+modLoader="javafml"
+loaderVersion="[47,)" # 适用于 Forge 1.20.1 及更高版本
+license="MIT"
+issueTrackerURL="https://example.com/issues" # 可选
+
+[[mods]]
+modId="autoaim"
+version="1.0.0"
+displayName="Auto Aim Mod"
+displayURL="https://example.com" # 可选
+logoFile="logo.png" # 可选
+credits="Thanks to contributors"
+authors="xyBakaQAQ"
+description=''' An auto-aiming mod '''
+
+[[dependencies.autoaim]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"

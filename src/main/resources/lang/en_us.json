@@ -1,0 +1,6 @@
+{
+  "key.autoaim.toggleVillager": "Toggle Villager Aim",
+  "key.autoaim.togglePlayer": "Toggle Player Aim",
+  "key.autoaim.togglePosLook": "Toggle PosLook Packet",
+  "key.categories.autoaim": "Auto Aim"
+}
