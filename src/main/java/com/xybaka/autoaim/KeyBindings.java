@@ -2,6 +2,7 @@ package com.xybaka.autoaim;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.common.util.Lazy;
@@ -13,24 +14,24 @@ import org.lwjgl.glfw.GLFW;
 public class KeyBindings {
 
     public static final Lazy<KeyMapping> TOGGLE_VILLAGER_KEY = Lazy.of(() -> new KeyMapping(
-            "key.autoaim.toggleVillager",
+            I18n.get("key.autoaim.toggleVillager"),
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_V,
-            "key.categories.autoaim"
+            I18n.get("key.categories.autoaim")
     ));
 
     public static final Lazy<KeyMapping> TOGGLE_PLAYER_KEY = Lazy.of(() -> new KeyMapping(
-            "key.autoaim.togglePlayer",
+            I18n.get("key.autoaim.togglePlayer"),
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_P,
-            "key.categories.autoaim"
+            I18n.get("key.categories.autoaim")
     ));
 
     public static final Lazy<KeyMapping> TOGGLE_POSLOOK_KEY = Lazy.of(() -> new KeyMapping(
-            "key.autoaim.togglePosLook",
+            I18n.get("key.autoaim.togglePosLook"),
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_L,
-            "key.categories.autoaim"
+            I18n.get("key.categories.autoaim")
     ));
 
     @SubscribeEvent
