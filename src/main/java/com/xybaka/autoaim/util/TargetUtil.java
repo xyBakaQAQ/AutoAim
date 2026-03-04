@@ -1,54 +1,77 @@
 package com.xybaka.autoaim.util;
 
+import com.xybaka.autoaim.modules.ModuleManager;
+import com.xybaka.autoaim.modules.misc.Target;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.ambient.AmbientCreature;
+import net.minecraft.world.entity.animal.*;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
-import java.util.List;
+import java.util.Comparator;
 
 public class TargetUtil {
     private static final Minecraft mc = Minecraft.getInstance();
 
-    public static LivingEntity getBestTarget(double range, boolean targetPlayers, boolean targetMonsters, boolean targetAnimals) {
+    private static Target getTargetModule() {
+        return ModuleManager.instance.get(Target.class); // 修复：用 instance
+    }
+
+    public static LivingEntity getBestTarget(double range) {
         if (mc.level == null || mc.player == null) return null;
+        Target t = getTargetModule();
+        if (t == null) return null;
 
-        List<Entity> entities = mc.level.getEntities(mc.player,
-                mc.player.getBoundingBox().inflate(range));
-
-        return entities.stream()
-                .filter(entity -> entity instanceof LivingEntity)
-                .map(entity -> (LivingEntity) entity)
-                .filter(entity -> isValid(entity, targetPlayers, targetMonsters, targetAnimals))
-                .min((e1, e2) -> Float.compare(mc.player.distanceTo(e1), mc.player.distanceTo(e2)))
+        return mc.level.getEntities(mc.player, mc.player.getBoundingBox().inflate(range))
+                .stream()
+                .filter(LivingEntity.class::isInstance)
+                .map(LivingEntity.class::cast)
+                .filter(e -> isValid(e, t))  // 传入 t，避免重复获取
+                .filter(e -> mc.player.distanceTo(e) <= range)
+                .min(getComparator(t.mode.getValue()))
                 .orElse(null);
     }
 
-    private static boolean isValid(LivingEntity entity, boolean targetPlayers, boolean targetMonsters, boolean targetAnimals) {
-        // 基础过滤：不能是自己，必须存活，且不能是隐身/无敌状态
+    private static Comparator<LivingEntity> getComparator(Target.Mode mode) {
+        return switch (mode) {
+            case CLOSEST       -> Comparator.comparingDouble(e -> mc.player.distanceTo(e));
+            case LOWEST_HEALTH -> Comparator.comparingDouble(LivingEntity::getHealth);
+            case FOV           -> Comparator.comparingDouble(TargetUtil::getFovAngle);
+        };
+    }
+
+    private static double getFovAngle(LivingEntity entity) {
+        Vec3 look = mc.player.getLookAngle();
+        Vec3 toEntity = entity.getEyePosition()
+                .subtract(mc.player.getEyePosition())
+                .normalize();
+        return -look.dot(toEntity);
+    }
+
+    // 外部调用（如 ESP）
+    public static boolean isValid(LivingEntity entity) {
+        Target t = getTargetModule();
+        if (t == null) return false;
+        return isValid(entity, t);
+    }
+
+    // 内部调用，复用已获取的 t
+    private static boolean isValid(LivingEntity entity, Target t) {
         if (entity == mc.player || !entity.isAlive() || entity.isInvisible()) return false;
 
-        // 1. 玩家过滤
-        if (entity instanceof Player) {
-            if (!targetPlayers) return false;
-            // 排除创造模式玩家
-            if (((Player) entity).isCreative()) return false;
-        }
+        if (entity instanceof Player p)         return t.players.isEnabled() && !p.isCreative() && !p.isSpectator();
+        if (entity instanceof Monster)          return t.monsters.isEnabled();
+        if (entity instanceof Animal)           return t.animals.isEnabled();
+        if (entity instanceof AbstractVillager) return t.villagers.isEnabled();
+        if (entity instanceof IronGolem
+                || entity instanceof SnowGolem)        return t.golems.isEnabled();
+        if (entity instanceof WaterAnimal)      return t.waterAnimals.isEnabled();
+        if (entity instanceof AbstractFish)     return t.waterCreatures.isEnabled();
+        if (entity instanceof AmbientCreature)  return t.ambient.isEnabled();
 
-        // 2. 敌对生物过滤 (僵尸、骷髅、爬行者等)
-        if (entity instanceof Monster) {
-            return targetMonsters;
-        }
-
-        // 3. 友好/被动生物过滤 (猪、羊、村民等)
-        if (entity instanceof Animal || entity instanceof AbstractVillager) {
-            return targetAnimals;
-        }
-
-        // 其他情况（例如盔甲架等，默认返回 false）
         return false;
     }
 }

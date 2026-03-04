@@ -12,9 +12,7 @@ public class ClickGUI extends Module {
 
     @Override
     public void onEnable() {
-        // 打开 GUI
         mc.setScreen(new ClickGuiScreen());
-        // 开启后立即关闭模块状态，防止下次按键冲突，且 GUI 关闭由 Screen 自己处理
         this.disable();
     }
 }

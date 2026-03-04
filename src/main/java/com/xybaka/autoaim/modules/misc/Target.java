@@ -1,4 +1,32 @@
 package com.xybaka.autoaim.modules.misc;
 
-public class Target {
+import com.xybaka.autoaim.modules.Category;
+import com.xybaka.autoaim.modules.Module;
+import com.xybaka.autoaim.modules.settings.BooleanSetting;
+import com.xybaka.autoaim.modules.settings.EnumSetting;
+import org.lwjgl.glfw.GLFW;
+
+public class Target extends Module {
+
+    public enum Mode { CLOSEST, LOWEST_HEALTH, FOV }
+
+    public final EnumSetting<Mode> mode         = new EnumSetting<>("Mode", Mode.CLOSEST);
+    public final BooleanSetting players         = new BooleanSetting("Players",         true);
+    public final BooleanSetting monsters        = new BooleanSetting("Monsters",        true);
+    public final BooleanSetting animals         = new BooleanSetting("Animals",         false);
+    public final BooleanSetting villagers       = new BooleanSetting("Villagers",       false);
+    public final BooleanSetting golems          = new BooleanSetting("Golems",          false);
+    public final BooleanSetting waterAnimals    = new BooleanSetting("Water Animals",   false);
+    public final BooleanSetting waterCreatures  = new BooleanSetting("Water Creatures", false);
+    public final BooleanSetting ambient         = new BooleanSetting("Ambient",         false);
+
+    public Target() {
+        super("Target", Category.MISC, GLFW.GLFW_KEY_UNKNOWN);
+        this.enable();
+    }
+
+    @Override
+    public void toggle() {
+        if (!isEnabled()) enable();
+    }
 }

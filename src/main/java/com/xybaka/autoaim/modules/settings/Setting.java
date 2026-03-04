@@ -13,7 +13,7 @@ public abstract class Setting {
     public String getName() { return name; }
 
     public Module getParent() { return parent; }
-    
+
     public void setParent(Module parent) {
         this.parent = parent;
     }

@@ -1,14 +1,16 @@
 package com.xybaka.autoaim.modules;
 
 import com.xybaka.autoaim.modules.combat.AutoAim;
+import com.xybaka.autoaim.modules.misc.Target;
+import com.xybaka.autoaim.modules.movement.Sprint;
 import com.xybaka.autoaim.modules.render.ClickGUI;
+import com.xybaka.autoaim.modules.render.ESP;
 import com.xybaka.autoaim.modules.render.HUD;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleManager {
-    // 使用单例模式，方便全局调用：ModuleManager.instance.getModules()
     public static final ModuleManager instance = new ModuleManager();
 
     private final List<Module> modules = new ArrayList<>();
@@ -17,9 +19,20 @@ public class ModuleManager {
         //Combat
         modules.add(new AutoAim());
 
+        //Misc
+        modules.add(new Target());
+
+        //Movement
+        modules.add(new Sprint());
+
         //Render
         modules.add(new HUD());
         modules.add(new ClickGUI());
+        modules.add(new ESP());
+
+        modules.forEach(Module::init);
+
+        get(Target.class).enable();
     }
 
     public List<Module> getModules() {
@@ -39,5 +52,13 @@ public class ModuleManager {
             if (m.getCategory() == category) categoryModules.add(m);
         }
         return categoryModules;
+    }
+
+    public <T extends Module> T get(Class<T> clazz) {
+        return modules.stream()
+                .filter(m -> m.getClass() == clazz)
+                .map(clazz::cast)
+                .findFirst()
+                .orElse(null);
     }
 }
