@@ -2,6 +2,7 @@ package com.xybaka.autoaim.util;
 
 import com.xybaka.autoaim.modules.ModuleManager;
 import com.xybaka.autoaim.modules.misc.Target;
+import com.xybaka.autoaim.modules.misc.Teams;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ambient.AmbientCreature;
@@ -37,9 +38,9 @@ public class TargetUtil {
 
     private static Comparator<LivingEntity> getComparator(Target.Mode mode) {
         return switch (mode) {
-            case CLOSEST       -> Comparator.comparingDouble(e -> mc.player.distanceTo(e));
+            case CLOSEST -> Comparator.comparingDouble(e -> mc.player.distanceTo(e));
             case LOWEST_HEALTH -> Comparator.comparingDouble(LivingEntity::getHealth);
-            case FOV           -> Comparator.comparingDouble(TargetUtil::getFovAngle);
+            case FOV -> Comparator.comparingDouble(TargetUtil::getFovAngle);
         };
     }
 
@@ -51,27 +52,31 @@ public class TargetUtil {
         return -look.dot(toEntity);
     }
 
-    // 外部调用（如 ESP）
     public static boolean isValid(LivingEntity entity) {
         Target t = getTargetModule();
         if (t == null) return false;
         return isValid(entity, t);
     }
 
-    // 内部调用，复用已获取的 t
     private static boolean isValid(LivingEntity entity, Target t) {
-        if (entity == mc.player || !entity.isAlive() || entity.isInvisible()) return false;
+        if (entity == mc.player || !entity.isAlive() || entity.isInvisible())
+            return false;
 
-        if (entity instanceof Player p)         return t.players.isEnabled() && !p.isCreative() && !p.isSpectator();
-        if (entity instanceof Monster)          return t.monsters.isEnabled();
-        if (entity instanceof Animal)           return t.animals.isEnabled();
+        if (entity instanceof Player p) {
+            if (!t.players.isEnabled()) return false;
+
+            if (p.isCreative() || p.isSpectator()) return false;
+            Teams teams = ModuleManager.instance.get(Teams.class);
+
+            if (teams != null && teams.isEnabled()) {return !teams.isTeam(p);}return true;
+        }
+        if (entity instanceof Monster) return t.monsters.isEnabled();
+        if (entity instanceof Animal) return t.animals.isEnabled();
         if (entity instanceof AbstractVillager) return t.villagers.isEnabled();
-        if (entity instanceof IronGolem
-                || entity instanceof SnowGolem)        return t.golems.isEnabled();
-        if (entity instanceof WaterAnimal)      return t.waterAnimals.isEnabled();
-        if (entity instanceof AbstractFish)     return t.waterCreatures.isEnabled();
-        if (entity instanceof AmbientCreature)  return t.ambient.isEnabled();
-
+        if (entity instanceof IronGolem || entity instanceof SnowGolem) return t.golems.isEnabled();
+        if (entity instanceof WaterAnimal) return t.waterAnimals.isEnabled();
+        if (entity instanceof AbstractFish) return t.waterCreatures.isEnabled();
+        if (entity instanceof AmbientCreature) return t.ambient.isEnabled();
         return false;
     }
 }

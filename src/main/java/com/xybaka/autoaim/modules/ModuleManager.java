@@ -2,6 +2,7 @@ package com.xybaka.autoaim.modules;
 
 import com.xybaka.autoaim.modules.combat.AutoAim;
 import com.xybaka.autoaim.modules.misc.Target;
+import com.xybaka.autoaim.modules.misc.Teams;
 import com.xybaka.autoaim.modules.movement.Sprint;
 import com.xybaka.autoaim.modules.render.ClickGUI;
 import com.xybaka.autoaim.modules.render.ESP;
@@ -21,6 +22,7 @@ public class ModuleManager {
 
         //Misc
         modules.add(new Target());
+        modules.add(new Teams());
 
         //Movement
         modules.add(new Sprint());

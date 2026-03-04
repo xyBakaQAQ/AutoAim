@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.xybaka.autoaim.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_17",
   "refmap": "autoaim.refmap.json",
   "mixins": [
   ],
