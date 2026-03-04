@@ -1,4 +1,9 @@
 package com.xybaka.autoaim.modules;
 
-public class Category {
+    public enum Category {
+    COMBAT,
+    MOVEMENT,
+    RENDER,
+    PLAYER,
+    MISC
 }
