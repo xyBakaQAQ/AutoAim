@@ -1,6 +1,6 @@
 package com.xybaka.autoaim;
 
-import net.minecraftforge.common.MinecraftForge;
+import com.xybaka.autoaim.events.EventManager;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -9,6 +9,6 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 @EventBusSubscriber(modid = "autoaim", bus = Bus.MOD)
 public class AutoAim {
     public AutoAim() {
-        MinecraftForge.EVENT_BUS.register(this);
+        EventManager.register();
     }
 }

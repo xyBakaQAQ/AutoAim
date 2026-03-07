@@ -1,10 +1,8 @@
 package com.xybaka.autoaim.modules;
 
-import com.xybaka.autoaim.modules.combat.AutoAim;
-import com.xybaka.autoaim.modules.combat.NoRecoil;
-import com.xybaka.autoaim.modules.client.Target;
-import com.xybaka.autoaim.modules.client.Teams;
-import com.xybaka.autoaim.modules.movement.Sprint;
+import com.xybaka.autoaim.modules.combat.*;
+import com.xybaka.autoaim.modules.client.*;
+import com.xybaka.autoaim.modules.movement.*;
 import com.xybaka.autoaim.modules.render.*;
 
 import java.util.ArrayList;
@@ -26,13 +24,14 @@ public class ModuleManager {
 
         //Movement
         modules.add(new Sprint());
+        modules.add(new invMove());
 
         //Render
         modules.add(new HUD());
         modules.add(new ClickGUI());
         modules.add(new ESP());
         modules.add(new FullBright());
-        modules.add(new NoHurtCam());
+        modules.add(new Camera());
 
         modules.forEach(Module::init);
 

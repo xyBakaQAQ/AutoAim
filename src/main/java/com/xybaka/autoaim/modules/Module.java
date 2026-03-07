@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Module {
-    protected static final Minecraft mc = Minecraft.getInstance();
+    public static final Minecraft mc = Minecraft.getInstance();
     private final List<Setting> settings = new ArrayList<>();
     private final String name;
     private final Category category;

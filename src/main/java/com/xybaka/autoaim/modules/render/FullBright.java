@@ -9,6 +9,7 @@ import org.lwjgl.glfw.GLFW;
 public class FullBright extends Module {
     public FullBright() {
         super("FullBright", Category.RENDER, GLFW.GLFW_KEY_UNKNOWN);
+        this.enable();
     }
 
     @Override

@@ -15,8 +15,8 @@
 
 ### 下载
 
-请在最新GitHub Actions中获取可用的 Mods：  
-➡️ [GitHub Actions](https://github.com/xyBakaQAQ/AutoAim/actions)
+请在最新Releases中获取可用的 Mods：  
+➡️ [Releases](https://github.com/xyBakaQAQ/AutoAim/releases)
 
 ### 功能说明
 

@@ -37,11 +37,11 @@ jobs:
       - name: Rename jar
         run: |
           mkdir release
-          cp build/libs/*.jar release/mod-${{ steps.vars.outputs.sha_short }}.jar
+          cp build/libs/autoaim-1.20.1-*.jar release/AutoAim-${{ steps.vars.outputs.sha_short }}.jar
 
       - name: Create / Update Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Latest Build
+          name: Latest Build (${{ steps.vars.outputs.sha_short }})
           files: release/*.jar
