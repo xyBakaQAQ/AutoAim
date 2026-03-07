@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     permissions:
       contents: write
 
@@ -24,24 +25,54 @@ jobs:
           java-version: 21
           distribution: microsoft
 
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build
+      - name: Build project
         run: ./gradlew build
 
-      - name: Get commit hash
+      - name: Get commit info
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
 
-      - name: Rename jar
+      - name: Prepare release files
         run: |
           mkdir release
-          cp build/libs/autoaim-1.20.1-*.jar release/AutoAim-${{ steps.vars.outputs.sha_short }}.jar
+          cp build/libs/*.jar release/mod.jar
 
-      - name: Create / Update Release
+      - name: Create commit release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ steps.vars.outputs.sha_short }}
+          name: Build ${{ steps.vars.outputs.sha_short }}
+          body: |
+            ## Changelog
+            ${{ steps.vars.outputs.commit_msg }}
+
+            Commit: ${{ github.sha }}
+          files: release/mod.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old latest release
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create latest release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: Latest Build (${{ steps.vars.outputs.sha_short }})
-          files: release/*.jar
+          body: |
+            ## Changelog
+            ${{ steps.vars.outputs.commit_msg }}
+          files: release/mod.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
