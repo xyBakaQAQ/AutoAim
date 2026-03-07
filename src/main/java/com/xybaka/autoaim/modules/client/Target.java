@@ -1,4 +1,4 @@
-package com.xybaka.autoaim.modules.misc;
+package com.xybaka.autoaim.modules.client;
 
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
@@ -21,7 +21,7 @@ public class Target extends Module {
     public final BooleanSetting ambient         = new BooleanSetting("Ambient",         false);
 
     public Target() {
-        super("Target", Category.MISC, GLFW.GLFW_KEY_UNKNOWN);
+        super("Target", Category.CLIENT, GLFW.GLFW_KEY_UNKNOWN);
         this.enable();
     }
 

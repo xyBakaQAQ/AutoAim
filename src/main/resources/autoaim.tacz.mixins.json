@@ -1,0 +1,15 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.xybaka.autoaim.mixin.tacz",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "autoaim.refmap.json",
+  "mixins": [
+  ],
+  "client": [
+    "CameraSetupEventMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

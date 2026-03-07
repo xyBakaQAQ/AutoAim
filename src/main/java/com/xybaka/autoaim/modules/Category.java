@@ -5,5 +5,5 @@ package com.xybaka.autoaim.modules;
     MOVEMENT,
     RENDER,
     PLAYER,
-    MISC
+    CLIENT
 }

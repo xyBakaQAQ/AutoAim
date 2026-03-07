@@ -61,3 +61,10 @@ mandatory = true
 versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "tacz"
+mandatory = false
+versionRange = "[1.0.0,)"
+ordering = "AFTER"
+side = "CLIENT"

@@ -1,8 +1,9 @@
 package com.xybaka.autoaim.modules;
 
 import com.xybaka.autoaim.modules.combat.AutoAim;
-import com.xybaka.autoaim.modules.misc.Target;
-import com.xybaka.autoaim.modules.misc.Teams;
+import com.xybaka.autoaim.modules.combat.NoRecoil;
+import com.xybaka.autoaim.modules.client.Target;
+import com.xybaka.autoaim.modules.client.Teams;
 import com.xybaka.autoaim.modules.movement.Sprint;
 import com.xybaka.autoaim.modules.render.ClickGUI;
 import com.xybaka.autoaim.modules.render.ESP;
@@ -17,12 +18,13 @@ public class ModuleManager {
     private final List<Module> modules = new ArrayList<>();
 
     public ModuleManager() {
-        //Combat
-        modules.add(new AutoAim());
-
-        //Misc
+        //Client
         modules.add(new Target());
         modules.add(new Teams());
+
+        //Combat
+        modules.add(new AutoAim());
+        modules.add(new NoRecoil());
 
         //Movement
         modules.add(new Sprint());

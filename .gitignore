@@ -11,6 +11,10 @@ out
 *.ipr
 *.iws
 *.iml
+.idea/
+
+# VS Code
+.vscode/
 
 # gradle
 build

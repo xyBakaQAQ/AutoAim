@@ -1,4 +1,4 @@
-package com.xybaka.autoaim.modules.misc;
+package com.xybaka.autoaim.modules.client;
 
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
@@ -16,7 +16,7 @@ public class Teams extends Module {
     public final BooleanSetting colorCheck = new BooleanSetting("ColorCheck", false);
 
     public Teams() {
-        super("Teams", Category.MISC, GLFW.GLFW_KEY_UNKNOWN);
+        super("Teams", Category.CLIENT, GLFW.GLFW_KEY_UNKNOWN);
     }
 
     public boolean isTeam(Player target) {

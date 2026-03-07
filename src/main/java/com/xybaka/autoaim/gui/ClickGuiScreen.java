@@ -17,78 +17,126 @@ import java.util.Map;
 
 public class ClickGuiScreen extends Screen {
 
-    // ── 每个分类面板的状态 ──────────────────────────────────────
-    private static class Panel {
-        float x, y;           // 当前渲染坐标（平滑跟随）
+    // ────────────────────────── 面板状态 ──────────────────────────────────
+
+    private static final class Panel {
+        float x, y;
         float targetX, targetY;
         boolean collapsed = false;
-        Module expandedModule = null;  // 当前展开设置的模块
-        String openedEnumName = null;  // 记住展开的 EnumSetting
-        float settingsSlide = 0f;      // 设置面板滑入进度 0→1
+        Module  openModule = null;   // 当前展开设置的模块
+        String  openEnum   = null;   // 当前展开的 EnumSetting 名称
+        float   slideAnim  = 0f;     // 0→1，设置区滑入进度
 
-        Panel(float x, float y) {
-            this.x = this.targetX = x;
-            this.y = this.targetY = y;
-        }
+        Panel(float x, float y) { this.x = this.targetX = x; this.y = this.targetY = y; }
     }
 
-    // ── 模块开关动画 ─────────────────────────────────────────────
-    private final Map<Module, Float> toggleAnim = new HashMap<>(); // 0→1
+    // ────────────────────────── 字段 ──────────────────────────────────────
 
-    // ── 面板数据 ─────────────────────────────────────────────────
-    private final Map<Category, Panel> panels = new HashMap<>();
+    private final Map<Category, Panel> panels     = new HashMap<>();
+    private final Map<Module, Float>   toggleAnim = new HashMap<>();
 
-    // ── 拖动状态 ─────────────────────────────────────────────────
-    private Panel draggingPanel = null;
+    private Panel  dragPanel;
     private double dragOffX, dragOffY;
-    private NumberSetting draggingNumber = null;
-    private Panel draggingNumberPanel = null;
 
-    // ── 尺寸常量 ─────────────────────────────────────────────────
-    private static final int PANEL_W      = 160;
-    private static final int HEADER_H     = 22;
-    private static final int MODULE_H     = 22;
-    private static final int SETTING_H    = 28;
-    private static final int ENUM_ROW_H   = 16;
-    private static final int SETTINGS_W   = 160;
-    private static final int CORNER       = 4;
+    private NumberSetting dragNumber;
+    private float         dragBarX;
+    private float         dragBarW;
 
-    // ── 颜色 ─────────────────────────────────────────────────────
-    private static final int C_BG         = 0xF0111118;
-    private static final int C_HEADER1    = 0xFF3A3AFF; // 渐变起点（蓝）
-    private static final int C_HEADER2    = 0xFF9B30FF; // 渐变终点（紫）
-    private static final int C_MODULE_ON  = 0xFF2A2A4A;
-    private static final int C_MODULE_OFF = 0xFF1A1A26;
-    private static final int C_HOVER      = 0xFF252540;
-    private static final int C_ACCENT     = 0xFF7B6FFF;
-    private static final int C_TEXT       = 0xFFE0E0FF;
-    private static final int C_TEXT_DIM   = 0xFF8888AA;
-    private static final int C_TRUE       = 0xFF55FF88;
-    private static final int C_FALSE      = 0xFFFF5566;
-    private static final int C_BAR_BG     = 0xFF252535;
-    private static final int C_BAR_FG     = 0xFF7B6FFF;
-    private static final int C_ENUM_SEL   = 0xFF3A3A60;
+    // ────────────────────────── 尺寸常量 ──────────────────────────────────
+
+    private static final int PW      = 160;
+    private static final int HEADER  = 22;
+    private static final int MOD_H   = 22;
+    private static final int SET_H   = 28;
+    private static final int ENUM_H  = 16;
+    private static final int CORNER  = 4;
+    private static final int BAR_PAD = 10;
+    private static final int BAR_Y   = 18;
+    private static final int BAR_H   = 4;
+    private static final int DOT_R   = 3;
+
+    // ────────────────────────── 颜色常量 ──────────────────────────────────
+
+    private static final int C_BG       = 0xF0111118;
+    private static final int C_SET_BG   = 0xF0181825;
+    private static final int C_HDR_L    = 0xFF3A3AFF;
+    private static final int C_HDR_R    = 0xFF9B30FF;
+    private static final int C_MOD_ON   = 0xFF2A2A4A;
+    private static final int C_MOD_OFF  = 0xFF1A1A26;
+    private static final int C_HOVER    = 0xFF252540;
+    private static final int C_ACCENT   = 0xFF7B6FFF;
+    private static final int C_TEXT     = 0xFFE0E0FF;
+    private static final int C_DIM      = 0xFF8888AA;
+    private static final int C_TRUE     = 0xFF55FF88;
+    private static final int C_BAR_BG   = 0xFF252535;
+    private static final int C_BAR_FG   = 0xFF7B6FFF;
+    private static final int C_ENUM_SEL = 0xFF3A3A60;
+
+    // ────────────────────────── 构造 ──────────────────────────────────────
 
     public ClickGuiScreen() {
         super(Component.literal("ClickGUI"));
-        // 初始化每个分类面板的位置
         Category[] cats = Category.values();
         for (int i = 0; i < cats.length; i++) {
-            panels.put(cats[i], new Panel(20 + i * (PANEL_W + 12), 30));
+            panels.put(cats[i], new Panel(20 + i * (PW + 12), 30));
         }
     }
 
-    // ── 平滑插值 ─────────────────────────────────────────────────
-    private float lerp(float a, float b, float t) {
+    // ────────────────────────── 工具 ──────────────────────────────────────
+
+    private static float lerp(float a, float b, float t) {
         float d = b - a;
         return Math.abs(d) < 0.3f ? b : a + d * t;
     }
 
-    // ── 主渲染 ───────────────────────────────────────────────────
+    private static boolean hit(double mx, double my, float x, float y, float w, float h) {
+        return mx >= x && mx < x + w && my >= y && my < y + h;
+    }
+
+    private static int lerpRGB(int a, int b, float t) {
+        int aa = (a >> 24) & 0xFF;
+        int ar = (a >> 16) & 0xFF, ag = (a >> 8) & 0xFF, ab = a & 0xFF;
+        int br = (b >> 16) & 0xFF, bg = (b >> 8) & 0xFF, bb = b & 0xFF;
+        return (aa << 24)
+                | ((int)(ar + (br - ar) * t) << 16)
+                | ((int)(ag + (bg - ag) * t) << 8)
+                |  (int)(ab + (bb - ab) * t);
+    }
+
+    private static int withAlpha(int rgb, int a) {
+        return (a << 24) | (rgb & 0x00FFFFFF);
+    }
+
+    /** 计算展开模块的设置区总高度。 */
+    private int calcSettingsH(Panel p, Module m) {
+        if (m == null || m.getSettings().isEmpty()) return 0;
+        int h = 8;
+        for (Setting s : m.getSettings()) {
+            if (s instanceof EnumSetting<?> e && s.getName().equals(p.openEnum)) {
+                h += 18 + e.getValues().length * ENUM_H + 6;
+            } else {
+                h += SET_H;
+            }
+        }
+        return h;
+    }
+
+    /** 计算面板总高度。 */
+    private int calcPanelH(Panel p, List<Module> mods) {
+        if (p.collapsed) return HEADER;
+        int h = HEADER;
+        for (Module m : mods) {
+            h += MOD_H;
+            if (m == p.openModule) h += Math.round(calcSettingsH(p, m) * p.slideAnim);
+        }
+        return h;
+    }
+
+    // ────────────────────────── 渲染 ──────────────────────────────────────
+
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        // 半透明背景遮罩
-        g.fill(0, 0, this.width, this.height, 0x88000000);
+        g.fill(0, 0, width, height, 0x88000000);
 
         for (Category cat : Category.values()) {
             Panel p = panels.get(cat);
@@ -97,159 +145,124 @@ public class ClickGuiScreen extends Screen {
             renderPanel(g, cat, p, mx, my);
         }
 
-        if (draggingPanel != null) {
-            draggingPanel.targetX = (float)(mx - dragOffX);
-            draggingPanel.targetY = (float)(my - dragOffY);
+        if (dragPanel != null) {
+            dragPanel.targetX = (float)(mx - dragOffX);
+            dragPanel.targetY = (float)(my - dragOffY);
         }
-        if (draggingNumber != null) updateNumber(mx, draggingNumberPanel);
+        if (dragNumber != null) applyDragNumber(mx);
 
         super.render(g, mx, my, pt);
     }
 
     private void renderPanel(GuiGraphics g, Category cat, Panel p, int mx, int my) {
-        List<Module> modules = ModuleManager.instance.getModulesByCategory(cat);
+        List<Module> mods = ModuleManager.instance.getModulesByCategory(cat);
         float px = p.x, py = p.y;
 
-        // 计算面板高度
-        int modCount = p.collapsed ? 0 : modules.size();
-        int panelH = HEADER_H + modCount * MODULE_H;
-
-        // 面板背景
-        fillRounded(g, px, py, PANEL_W, panelH, C_BG);
-
-        // 标题栏渐变
-        fillRoundedTop(g, px, py, PANEL_W, HEADER_H, C_HEADER1, C_HEADER2);
-
-        // 标题文字
-        String title = cat.name() + (p.collapsed ? " ▶" : " ▼");
-        g.drawString(font, title, (int)px + 8, (int)py + 7, C_TEXT);
+        fillRounded(g, px, py, PW, calcPanelH(p, mods), C_BG);
+        fillGradientH(g, px, py, PW, HEADER, C_HDR_L, C_HDR_R);
+        g.drawString(font, cat.name() + (p.collapsed ? " ▶" : " ▼"), (int)px + 8, (int)py + 7, C_TEXT);
 
         if (p.collapsed) return;
 
-        // 模块列表
-        float my2 = py + HEADER_H;
-        for (Module m : modules) {
-            float animVal = toggleAnim.getOrDefault(m, m.isEnabled() ? 1f : 0f);
-            float targetAnim = m.isEnabled() ? 1f : 0f;
-            toggleAnim.put(m, lerp(animVal, targetAnim, 0.2f));
+        if (p.openModule == null) p.slideAnim = lerp(p.slideAnim, 0f, 0.25f);
 
-            boolean hovered = isIn(mx, my, px, my2, PANEL_W, MODULE_H);
-            boolean expanded = m == p.expandedModule;
-
-            // 模块背景（开关动画混色）
-            int bgColor = lerpColor(C_MODULE_OFF, C_MODULE_ON, animVal);
-            if (hovered) bgColor = lerpColor(bgColor, C_HOVER, 0.5f);
-            g.fill((int)px, (int)my2, (int)(px + PANEL_W), (int)(my2 + MODULE_H), bgColor);
-
-            // 开启状态左侧光条
-            if (animVal > 0.01f) {
-                int barAlpha = (int)(animVal * 255);
-                g.fill((int)px, (int)my2, (int)px + 3, (int)(my2 + MODULE_H),
-                        (barAlpha << 24) | (C_ACCENT & 0x00FFFFFF));
-            }
-
-            // 展开指示
-            if (expanded) {
-                g.fill((int)(px + PANEL_W - 3), (int)my2, (int)(px + PANEL_W), (int)(my2 + MODULE_H), C_ACCENT);
-            }
-
-            // 模块名
-            int nameColor = m.isEnabled() ? C_TEXT : C_TEXT_DIM;
-            g.drawString(font, m.getName(), (int)px + 10, (int)my2 + 7, nameColor);
-
-            // 有设置时显示箭头
-            if (!m.getSettings().isEmpty()) {
-                String arrow = expanded ? "◀" : "▷";
-                g.drawString(font, arrow, (int)(px + PANEL_W - 14), (int)my2 + 7, C_TEXT_DIM);
-            }
-
-            my2 += MODULE_H;
-        }
-
-        // 右侧设置面板
-        if (p.expandedModule != null && !p.expandedModule.getSettings().isEmpty()) {
-            p.settingsSlide = lerp(p.settingsSlide, 1f, 0.18f);
-            float slideOffset = (1f - p.settingsSlide) * 20f;
-            int alpha = (int)(p.settingsSlide * 255);
-            renderSettings(g, p, px + PANEL_W + 4 + slideOffset, py, alpha, mx, my);
-        } else {
-            p.settingsSlide = lerp(p.settingsSlide, 0f, 0.2f);
+        float curY = py + HEADER;
+        for (Module m : mods) {
+            curY = renderModuleRow(g, p, m, px, curY, mx, my);
         }
     }
 
-    private void renderSettings(GuiGraphics g, Panel p, float sx, float sy, int alpha, int mx, int my) {
-        Module m = p.expandedModule;
-        List<Setting> settings = m.getSettings();
+    /** 渲染模块行及其下方内联设置，返回下一行 Y。 */
+    private float renderModuleRow(GuiGraphics g, Panel p, Module m, float px, float curY, int mx, int my) {
+        // 开关动画
+        float anim = lerp(toggleAnim.getOrDefault(m, m.isEnabled() ? 1f : 0f),
+                m.isEnabled() ? 1f : 0f, 0.2f);
+        toggleAnim.put(m, anim);
 
-        // 计算设置面板高度
-        int sh = 28;
-        for (Setting s : settings) {
-            sh += SETTING_H;
-            if (s instanceof EnumSetting<?> e && s.getName().equals(p.openedEnumName)) {
-                sh += e.getValues().length * ENUM_ROW_H + 6;
+        boolean hov      = hit(mx, my, px, curY, PW, MOD_H);
+        boolean expanded = m == p.openModule;
+
+        // 背景
+        int bg = lerpRGB(C_MOD_OFF, C_MOD_ON, anim);
+        if (hov && !expanded) bg = lerpRGB(bg, C_HOVER, 0.5f);
+        if (expanded)         bg = lerpRGB(bg, C_ACCENT, 0.10f);
+        g.fill((int)px, (int)curY, (int)(px + PW), (int)(curY + MOD_H), bg);
+
+        // 左侧启用光条
+        if (anim > 0.01f)
+            g.fill((int)px, (int)curY, (int)px + 3, (int)(curY + MOD_H),
+                    withAlpha(C_ACCENT, (int)(anim * 255)));
+
+        // 展开底部分隔线
+        if (expanded)
+            g.fill((int)px + 3, (int)(curY + MOD_H - 1), (int)(px + PW), (int)(curY + MOD_H),
+                    withAlpha(C_ACCENT, 100));
+
+        // 文字
+        g.drawString(font, m.getName(), (int)px + 10, (int)curY + 7,
+                m.isEnabled() ? C_TEXT : C_DIM);
+        if (!m.getSettings().isEmpty())
+            g.drawString(font, expanded ? "▲" : "▼", (int)(px + PW - 14), (int)curY + 7,
+                    expanded ? C_ACCENT : C_DIM);
+
+        curY += MOD_H;
+
+        // 内联设置区
+        if (expanded && !m.getSettings().isEmpty()) {
+            p.slideAnim = lerp(p.slideAnim, 1f, 0.18f);
+            int fullH = calcSettingsH(p, m);
+            int visH  = Math.round(fullH * p.slideAnim);
+            if (visH > 0) {
+                g.fill((int)px, (int)curY, (int)(px + PW), (int)(curY + visH), C_SET_BG);
+                g.fill((int)px, (int)curY, (int)px + 2, (int)(curY + visH), C_ACCENT);
+                g.enableScissor((int)px, (int)curY, (int)(px + PW), (int)(curY + visH));
+                renderSettings(g, p, m, px, curY, mx, my);
+                g.disableScissor();
+                curY += visH;
             }
         }
 
-        // 背景
-        int bgAlpha = (alpha * 0xF0 / 255);
-        fillRounded(g, sx, sy, SETTINGS_W, sh, (bgAlpha << 24) | 0x111118);
+        return curY;
+    }
 
-        // 标题
-        g.drawString(font, m.getName(), (int)sx + 8, (int)sy + 8,
-                (alpha << 24) | (C_ACCENT & 0x00FFFFFF));
-
-        float ry = sy + 26;
-
-        for (Setting s : settings) {
+    private void renderSettings(GuiGraphics g, Panel p, Module m, float px, float sy, int mx, int my) {
+        float ry = sy + 4;
+        for (Setting s : m.getSettings()) {
             if (s instanceof BooleanSetting b) {
-                boolean hov = isIn(mx, my, sx, ry, SETTINGS_W, SETTING_H);
-                if (hov) g.fill((int)sx, (int)ry, (int)(sx + SETTINGS_W), (int)(ry + SETTING_H), 0x22FFFFFF);
+                boolean hov = hit(mx, my, px + 2, ry, PW - 4, SET_H);
+                if (hov) g.fill((int)(px + 2), (int)ry, (int)(px + PW - 2), (int)(ry + SET_H), 0x22FFFFFF);
+                g.drawString(font, s.getName(), (int)px + 10, (int)ry + 6, C_TEXT);
+                drawToggle(g, px + PW - 34, ry + (SET_H - 10) / 2f, b.isEnabled());
+                ry += SET_H;
 
-                // 名称
-                g.drawString(font, s.getName(), (int)sx + 8, (int)ry + 6,
-                        (alpha << 24) | (C_TEXT & 0x00FFFFFF));
-
-                // 开关胶囊
-                drawToggle(g, sx + SETTINGS_W - 30, ry + 7, b.isEnabled(), alpha);
-                ry += SETTING_H;
-            }
-            else if (s instanceof NumberSetting n) {
-                g.drawString(font, n.getName() + ": " + String.format("%.1f", n.getValue()),
-                        (int)sx + 8, (int)ry + 5, (alpha << 24) | (C_TEXT & 0x00FFFFFF));
-
-                // 进度条
-                float bx = sx + 8, bw = SETTINGS_W - 16;
-                g.fill((int)bx, (int)ry + 18, (int)(bx + bw), (int)ry + 22,
-                        (alpha / 2 << 24) | (C_BAR_BG & 0x00FFFFFF));
+            } else if (s instanceof NumberSetting n) {
+                g.drawString(font, n.getName() + ": " + String.format("%.2f", n.getValue()),
+                        (int)px + BAR_PAD, (int)ry + 5, C_TEXT);
+                float bx = px + BAR_PAD, bw = PW - BAR_PAD * 2;
                 float prog = (float)((n.getValue() - n.getMin()) / (n.getMax() - n.getMin()));
-                g.fill((int)bx, (int)ry + 18, (int)(bx + bw * prog), (int)ry + 22,
-                        (alpha << 24) | (C_BAR_FG & 0x00FFFFFF));
-                // 拖动点
-                g.fill((int)(bx + bw * prog) - 2, (int)ry + 16, (int)(bx + bw * prog) + 2, (int)ry + 24,
-                        (alpha << 24) | (C_ACCENT & 0x00FFFFFF));
-                ry += SETTING_H;
-            }
-            else if (s instanceof EnumSetting<?> e) {
-                boolean isOpen = s.getName().equals(p.openedEnumName);
-                boolean hov = isIn(mx, my, sx, ry, SETTINGS_W, 18);
-                if (hov) g.fill((int)sx, (int)ry, (int)(sx + SETTINGS_W), (int)(ry + 18), 0x22FFFFFF);
+                int by = (int)(ry + BAR_Y);
+                g.fill((int)bx, by, (int)(bx + bw), by + BAR_H, C_BAR_BG);
+                g.fill((int)bx, by, (int)(bx + bw * prog), by + BAR_H, C_BAR_FG);
+                int dotX = (int)(bx + bw * prog);
+                g.fill(dotX - DOT_R, by - 2, dotX + DOT_R, by + BAR_H + 2, C_ACCENT);
+                ry += SET_H;
 
-                int hColor = isOpen ? (C_ACCENT & 0x00FFFFFF) : (C_TEXT_DIM & 0x00FFFFFF);
-                g.drawString(font, s.getName() + ": §r" + e.getDisplayName() + (isOpen ? " ▲" : " ▼"),
-                        (int)sx + 8, (int)ry + 5, (alpha << 24) | hColor);
+            } else if (s instanceof EnumSetting<?> e) {
+                boolean open   = s.getName().equals(p.openEnum);
+                boolean hov    = hit(mx, my, px + 2, ry, PW - 4, 18);
+                if (hov) g.fill((int)(px + 2), (int)ry, (int)(px + PW - 2), (int)(ry + 18), 0x22FFFFFF);
+                g.drawString(font, s.getName() + ": " + e.getDisplayName() + (open ? " ▲" : " ▼"),
+                        (int)px + 10, (int)ry + 5, open ? C_ACCENT : C_DIM);
                 ry += 18;
-
-                if (isOpen) {
+                if (open) {
                     for (Object val : e.getValues()) {
-                        boolean sel = val == e.getValue();
-                        boolean rowHov = isIn(mx, my, sx + 4, ry, SETTINGS_W - 8, ENUM_ROW_H);
-                        int rowBg = sel ? C_ENUM_SEL : (rowHov ? 0xFF1E1E30 : 0xFF161622);
-                        g.fill((int)sx + 4, (int)ry, (int)(sx + SETTINGS_W - 4), (int)(ry + ENUM_ROW_H), rowBg);
-                        if (sel) g.fill((int)sx + 4, (int)ry, (int)sx + 7, (int)(ry + ENUM_ROW_H), C_ACCENT);
-                        int valColor = sel ? (C_TEXT & 0x00FFFFFF) : (C_TEXT_DIM & 0x00FFFFFF);
-                        g.drawString(font, val.toString(), (int)sx + 12, (int)ry + 4,
-                                (alpha << 24) | valColor);
-                        ry += ENUM_ROW_H;
+                        boolean sel    = val == e.getValue();
+                        boolean rowHov = hit(mx, my, px + 4, ry, PW - 8, ENUM_H);
+                        g.fill((int)(px + 4), (int)ry, (int)(px + PW - 4), (int)(ry + ENUM_H),
+                                sel ? C_ENUM_SEL : (rowHov ? 0xFF1E1E30 : 0xFF161622));
+                        if (sel) g.fill((int)(px + 4), (int)ry, (int)(px + 6), (int)(ry + ENUM_H), C_ACCENT);
+                        g.drawString(font, val.toString(), (int)(px + 12), (int)ry + 4, sel ? C_TEXT : C_DIM);
+                        ry += ENUM_H;
                     }
                     ry += 6;
                 }
@@ -257,165 +270,147 @@ public class ClickGuiScreen extends Screen {
         }
     }
 
-    // ── 胶囊开关绘制 ─────────────────────────────────────────────
-    private void drawToggle(GuiGraphics g, float x, float y, boolean on, int alpha) {
-        int bg = on ? ((alpha << 24) | (C_TRUE & 0x00FFFFFF)) : ((alpha << 24) | 0x444455);
-        g.fill((int)x, (int)y, (int)x + 22, (int)y + 10, bg);
-        float knobX = on ? x + 13 : x + 1;
-        g.fill((int)knobX, (int)y + 1, (int)knobX + 8, (int)y + 9,
-                (alpha << 24) | 0xEEEEFF);
+    private void drawToggle(GuiGraphics g, float x, float y, boolean on) {
+        g.fill((int)x, (int)y, (int)x + 22, (int)y + 10, on ? C_TRUE : 0xFF444455);
+        float kx = on ? x + 13 : x + 1;
+        g.fill((int)kx, (int)y + 1, (int)kx + 8, (int)y + 9, 0xFFEEEEFF);
     }
 
-    // ── 鼠标点击 ─────────────────────────────────────────────────
+    // ────────────────────────── 鼠标事件 ──────────────────────────────────
+
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
-        // 先检查设置面板点击（覆盖在面板右侧）
         for (Category cat : Category.values()) {
             Panel p = panels.get(cat);
-            if (p.expandedModule == null) continue;
-            float sx = p.x + PANEL_W + 4;
-            float sy = p.y;
-            if (handleSettingsClick(p, sx, sy, mx, my)) return true;
-        }
+            List<Module> mods = ModuleManager.instance.getModulesByCategory(cat);
 
-        for (Category cat : Category.values()) {
-            Panel p = panels.get(cat);
-            List<Module> modules = ModuleManager.instance.getModulesByCategory(cat);
-            int panelH = HEADER_H + (p.collapsed ? 0 : modules.size() * MODULE_H);
-
-            // 标题栏拖动 / 折叠
-            if (isIn(mx, my, p.x, p.y, PANEL_W, HEADER_H)) {
+            // 标题栏
+            if (hit(mx, my, p.x, p.y, PW, HEADER)) {
                 if (btn == 1) {
                     p.collapsed = !p.collapsed;
-                    if (p.collapsed) { p.expandedModule = null; p.settingsSlide = 0; }
-                } else {
-                    draggingPanel = p;
-                    dragOffX = mx - p.targetX;
-                    dragOffY = my - p.targetY;
+                    if (p.collapsed) { p.openModule = null; p.slideAnim = 0; }
+                } else if (btn == 0) {
+                    dragPanel = p;
+                    dragOffX  = mx - p.targetX;
+                    dragOffY  = my - p.targetY;
                 }
                 return true;
             }
 
             if (p.collapsed) continue;
 
-            // 模块行
-            float my2 = p.y + HEADER_H;
-            for (Module m : modules) {
-                if (isIn(mx, my, p.x, my2, PANEL_W, MODULE_H)) {
-                    if (btn == 0) m.toggle();
-                    if (btn == 1 || btn == 0) {
-                        if (p.expandedModule == m) {
-                            p.expandedModule = null;
-                            p.settingsSlide = 0;
-                        } else if (!m.getSettings().isEmpty()) {
-                            p.expandedModule = m;
-                            p.settingsSlide = 0;
-                        }
-                    }
+            float curY = p.y + HEADER;
+            for (Module m : mods) {
+                if (hit(mx, my, p.x, curY, PW, MOD_H)) {
+                    if (btn == 0) m.toggle();         // 左键：切换开关
+                    if (btn == 1) toggleSettings(p, m); // 右键：展开设置
                     return true;
                 }
-                my2 += MODULE_H;
+                curY += MOD_H;
+
+                if (m == p.openModule && !m.getSettings().isEmpty()) {
+                    int visH = Math.round(calcSettingsH(p, m) * p.slideAnim);
+                    if (visH > 0 && hit(mx, my, p.x, curY, PW, visH)) {
+                        handleSettingsClick(p, m, p.x, curY, mx, my);
+                        return true;
+                    }
+                    curY += visH;
+                }
             }
         }
         return super.mouseClicked(mx, my, btn);
     }
 
-    private boolean handleSettingsClick(Panel p, float sx, float sy, double mx, double my) {
-        Module m = p.expandedModule;
-        float ry = sy + 26;
+    private void toggleSettings(Panel p, Module m) {
+        if (m.getSettings().isEmpty()) return;
+        if (p.openModule == m) {
+            p.openModule = null;
+            p.slideAnim  = 0;
+            p.openEnum   = null;
+        } else {
+            p.openModule = m;
+            p.slideAnim  = 0;
+            p.openEnum   = null;
+        }
+    }
 
+    private void handleSettingsClick(Panel p, Module m, float px, float sy, double mx, double my) {
+        float ry = sy + 4;
         for (Setting s : m.getSettings()) {
             if (s instanceof BooleanSetting b) {
-                if (isIn(mx, my, sx, ry, SETTINGS_W, SETTING_H)) {
-                    b.toggle(); return true;
+                if (hit(mx, my, px + 2, ry, PW - 4, SET_H)) { b.toggle(); return; }
+                ry += SET_H;
+            } else if (s instanceof NumberSetting n) {
+                float bx = px + BAR_PAD, bw = PW - BAR_PAD * 2;
+                if (hit(mx, my, bx, ry + BAR_Y - 6, bw, BAR_H + 12)) {
+                    dragNumber = n;
+                    dragBarX   = bx;
+                    dragBarW   = bw;
+                    applyDragNumber(mx);
+                    return;
                 }
-                ry += SETTING_H;
-            }
-            else if (s instanceof NumberSetting n) {
-                if (isIn(mx, my, sx + 8, ry + 14, SETTINGS_W - 16, 12)) {
-                    draggingNumber = n;
-                    draggingNumberPanel = p;
-                    return true;
-                }
-                ry += SETTING_H;
-            }
-            else if (s instanceof EnumSetting<?> e) {
-                if (isIn(mx, my, sx, ry, SETTINGS_W, 18)) {
-                    p.openedEnumName = s.getName().equals(p.openedEnumName) ? null : s.getName();
-                    return true;
+                ry += SET_H;
+            } else if (s instanceof EnumSetting<?> e) {
+                if (hit(mx, my, px + 2, ry, PW - 4, 18)) {
+                    p.openEnum = s.getName().equals(p.openEnum) ? null : s.getName();
+                    return;
                 }
                 ry += 18;
-                if (s.getName().equals(p.openedEnumName)) {
+                if (s.getName().equals(p.openEnum)) {
                     for (int i = 0; i < e.getValues().length; i++) {
-                        if (isIn(mx, my, sx + 4, ry, SETTINGS_W - 8, ENUM_ROW_H)) {
-                            setEnumValue(e, i); return true;
-                        }
-                        ry += ENUM_ROW_H;
+                        if (hit(mx, my, px + 4, ry, PW - 8, ENUM_H)) { setEnum(e, i); return; }
+                        ry += ENUM_H;
                     }
                     ry += 6;
                 }
             }
         }
-        return false;
     }
 
     @Override
     public boolean mouseReleased(double mx, double my, int btn) {
-        draggingPanel = null;
-        draggingNumber = null;
-        draggingNumberPanel = null;
+        dragPanel  = null;
+        dragNumber = null;
         return super.mouseReleased(mx, my, btn);
     }
 
-    private void updateNumber(double mx, Panel p) {
-        if (draggingNumber == null || p == null) return;
-        float bx = p.x + PANEL_W + 4 + 8;
-        float bw = SETTINGS_W - 16;
-        double prog = Math.min(1, Math.max(0, (mx - bx) / bw));
-        double val = draggingNumber.getMin() + prog * (draggingNumber.getMax() - draggingNumber.getMin());
-        draggingNumber.setValue(val);
+    @Override
+    public boolean mouseDragged(double mx, double my, int btn, double dx, double dy) {
+        if (dragNumber != null) { applyDragNumber(mx); return true; }
+        return super.mouseDragged(mx, my, btn, dx, dy);
     }
 
-    // ── 工具方法 ─────────────────────────────────────────────────
-    private boolean isIn(double mx, double my, float x, float y, float w, float h) {
-        return mx >= x && mx <= x + w && my >= y && my <= y + h;
+    private void applyDragNumber(double mx) {
+        if (dragNumber == null) return;
+        double prog = Math.min(1, Math.max(0, (mx - dragBarX) / dragBarW));
+        dragNumber.setValue(dragNumber.getMin() + prog * (dragNumber.getMax() - dragNumber.getMin()));
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends Enum<T>> void setEnumValue(EnumSetting<T> s, int i) {
-        s.setValue(s.getValues()[i]);
+    // ────────────────────────── 绘图工具 ──────────────────────────────────
+
+    private void fillRounded(GuiGraphics g, float x, float y, float w, float h, int c) {
+        g.fill((int)(x + CORNER), (int)y,             (int)(x + w - CORNER), (int)(y + h),            c);
+        g.fill((int)x,            (int)(y + CORNER),   (int)(x + CORNER),     (int)(y + h - CORNER),   c);
+        g.fill((int)(x + w - CORNER), (int)(y + CORNER), (int)(x + w),        (int)(y + h - CORNER),   c);
     }
 
-    private int lerpColor(int a, int b, float t) {
-        int ar = (a >> 16) & 0xFF, ag = (a >> 8) & 0xFF, ab = a & 0xFF;
-        int br = (b >> 16) & 0xFF, bg = (b >> 8) & 0xFF, bb = b & 0xFF;
-        int rr = (int)(ar + (br - ar) * t);
-        int rg = (int)(ag + (bg - ag) * t);
-        int rb = (int)(ab + (bb - ab) * t);
-        int aa = ((a >> 24) & 0xFF);
-        return (aa << 24) | (rr << 16) | (rg << 8) | rb;
-    }
-
-    // 圆角矩形（用多个 fill 近似）
-    private void fillRounded(GuiGraphics g, float x, float y, float w, float h, int color) {
-        g.fill((int)(x + CORNER), (int)y, (int)(x + w - CORNER), (int)(y + h), color);
-        g.fill((int)x, (int)(y + CORNER), (int)(x + CORNER), (int)(y + h - CORNER), color);
-        g.fill((int)(x + w - CORNER), (int)(y + CORNER), (int)(x + w), (int)(y + h - CORNER), color);
-    }
-
-    private void fillRoundedTop(GuiGraphics g, float x, float y, float w, float h, int c1, int c2) {
-        // 水平渐变近似：分段绘制
+    private void fillGradientH(GuiGraphics g, float x, float y, float w, float h, int c1, int c2) {
         int steps = (int)w;
         for (int i = 0; i < steps; i++) {
-            float t = (float)i / steps;
-            int color = lerpColor(0xFF000000 | (c1 & 0xFFFFFF), 0xFF000000 | (c2 & 0xFFFFFF), t);
-            g.fill((int)(x + i), (int)y, (int)(x + i + 1), (int)(y + h), color);
+            g.fill((int)(x + i), (int)y, (int)(x + i + 1), (int)(y + h),
+                    lerpRGB(0xFF000000 | (c1 & 0xFFFFFF), 0xFF000000 | (c2 & 0xFFFFFF), (float)i / steps));
         }
     }
 
+    private static <T extends Enum<T>> void setEnum(EnumSetting<T> s, int i) {
+        s.setValue(s.getValues()[i]);
+    }
+
     @Override public boolean isPauseScreen() { return false; }
-    @Override public boolean keyPressed(int key, int scan, int mods) {
-        if (key == 256) { this.onClose(); return true; } // ESC 关闭
+
+    @Override
+    public boolean keyPressed(int key, int scan, int mods) {
+        if (key == 256) { onClose(); return true; }
         return super.keyPressed(key, scan, mods);
     }
 }

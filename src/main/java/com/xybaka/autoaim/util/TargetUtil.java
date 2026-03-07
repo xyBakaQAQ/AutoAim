@@ -1,8 +1,8 @@
 package com.xybaka.autoaim.util;
 
 import com.xybaka.autoaim.modules.ModuleManager;
-import com.xybaka.autoaim.modules.misc.Target;
-import com.xybaka.autoaim.modules.misc.Teams;
+import com.xybaka.autoaim.modules.client.Target;
+import com.xybaka.autoaim.modules.client.Teams;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ambient.AmbientCreature;
