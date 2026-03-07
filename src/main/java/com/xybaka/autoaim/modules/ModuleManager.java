@@ -5,9 +5,7 @@ import com.xybaka.autoaim.modules.combat.NoRecoil;
 import com.xybaka.autoaim.modules.client.Target;
 import com.xybaka.autoaim.modules.client.Teams;
 import com.xybaka.autoaim.modules.movement.Sprint;
-import com.xybaka.autoaim.modules.render.ClickGUI;
-import com.xybaka.autoaim.modules.render.ESP;
-import com.xybaka.autoaim.modules.render.HUD;
+import com.xybaka.autoaim.modules.render.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +31,8 @@ public class ModuleManager {
         modules.add(new HUD());
         modules.add(new ClickGUI());
         modules.add(new ESP());
+        modules.add(new FullBright());
+        modules.add(new NoHurtCam());
 
         modules.forEach(Module::init);
 
