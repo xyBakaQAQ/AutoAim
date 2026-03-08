@@ -1,12 +1,12 @@
 package com.xybaka.autoaim.events.features;
 
-import com.xybaka.autoaim.config.ConfigManager;
+import com.xybaka.autoaim.modules.ModuleManager;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public class ConfigSaveHandler {
     @SubscribeEvent
     public void onLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        ConfigManager.instance.save();
+        ModuleManager.instance.saveConfig();
     }
 }

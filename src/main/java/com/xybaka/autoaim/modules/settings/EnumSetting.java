@@ -13,16 +13,14 @@ public class EnumSetting<T extends Enum<T>> extends Setting {
     }
 
     public T getValue() { return value; }
-    public void setValue(T value) { 
-        this.value = value; 
-        ConfigManager.instance.save();
+    public void setValue(T value) {
+        this.value = value;
     }
     public T[] getValues() { return values; }
 
     public void cycle() {
         int next = (value.ordinal() + 1) % values.length;
         this.value = values[next];
-        ConfigManager.instance.save();
     }
 
     public String getDisplayName() {

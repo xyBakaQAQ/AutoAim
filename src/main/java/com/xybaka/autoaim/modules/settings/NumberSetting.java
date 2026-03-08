@@ -18,7 +18,6 @@ public class NumberSetting extends Setting {
     public void setValue(double value) {
         double precision = 1.0 / increment;
         this.value = Math.round(Math.max(min, Math.min(max, value)) * precision) / precision;
-        ConfigManager.instance.save();
     }
 
     public float getValueFloat() { return (float) value; }

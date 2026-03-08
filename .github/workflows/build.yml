@@ -44,11 +44,6 @@ jobs:
             echo EOF
           } >> $GITHUB_OUTPUT
 
-      - name: Prepare release files
-        run: |
-          mkdir release
-          cp build/libs/*.jar release/mod.jar
-
       - name: Create commit release
         uses: softprops/action-gh-release@v2
         with:
@@ -59,7 +54,7 @@ jobs:
             ${{ steps.vars.outputs.commit_msg }}
 
             Commit: ${{ github.sha }}
-          files: release/mod.jar
+          files: build/libs/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -77,6 +72,6 @@ jobs:
           body: |
             ## Changelog
             ${{ steps.vars.outputs.commit_msg }}
-          files: release/mod.jar
+          files: build/libs/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

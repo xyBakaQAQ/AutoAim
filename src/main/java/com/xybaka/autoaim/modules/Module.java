@@ -53,7 +53,6 @@ public abstract class Module {
         if (enabled) disable();
         else enable();
         HUD.push(this.getName(), this.enabled);
-        ConfigManager.instance.save();
     }
 
     public void enable() {
@@ -88,7 +87,6 @@ public abstract class Module {
 
     public void setKey(int key) {
         this.key = key;
-        ConfigManager.instance.save();
     }
 
     public boolean isEnabled() {

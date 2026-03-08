@@ -21,35 +21,31 @@ public class ModuleManager {
         //Client
         modules.add(new Target());
         modules.add(new Teams());
-
         //Combat
         modules.add(new AutoAim());
         modules.add(new NoRecoil());
-
         //Movement
         modules.add(new Sprint());
         modules.add(new invMove());
-
         //Render
         modules.add(new HUD());
         modules.add(new ClickGUI());
         modules.add(new ESP());
         modules.add(new FullBright());
         modules.add(new Camera());
+        modules.add(new NoFov());
 
         modules.forEach(Module::init);
-
-        ConfigManager.instance.load();
-
+        ConfigManager.instance.load(modules);
         get(Target.class).enable();
     }
 
     public void saveConfig() {
-        ConfigManager.instance.save();
+        ConfigManager.instance.save(modules);
     }
 
     public void loadConfig() {
-        ConfigManager.instance.load();
+        ConfigManager.instance.load(modules);
     }
 
     public List<Module> getModules() {
