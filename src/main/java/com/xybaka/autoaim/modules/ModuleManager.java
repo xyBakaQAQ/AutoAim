@@ -1,9 +1,12 @@
 package com.xybaka.autoaim.modules;
 
 import com.xybaka.autoaim.config.ConfigManager;
-import com.xybaka.autoaim.modules.combat.*;
-import com.xybaka.autoaim.modules.client.*;
-import com.xybaka.autoaim.modules.movement.*;
+import com.xybaka.autoaim.modules.client.Target;
+import com.xybaka.autoaim.modules.client.Teams;
+import com.xybaka.autoaim.modules.combat.AutoAim;
+import com.xybaka.autoaim.modules.combat.NoRecoil;
+import com.xybaka.autoaim.modules.movement.Sprint;
+import com.xybaka.autoaim.modules.movement.invMove;
 import com.xybaka.autoaim.modules.render.*;
 
 import java.util.ArrayList;
