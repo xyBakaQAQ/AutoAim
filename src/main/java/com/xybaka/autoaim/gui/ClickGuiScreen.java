@@ -41,6 +41,8 @@ public class ClickGuiScreen extends Screen {
     private NumberSetting dragNumber;
     private float         dragBarX;
     private float         dragBarW;
+    
+    private Module bindingModule = null;
 
     // ────────────────────────── 尺寸常量 ──────────────────────────────────
 
@@ -105,6 +107,39 @@ public class ClickGuiScreen extends Screen {
 
     private static int withAlpha(int rgb, int a) {
         return (a << 24) | (rgb & 0x00FFFFFF);
+    }
+    
+    private static String getKeyName(int key) {
+        if (key <= 0) return "NONE";
+        try {
+            int scancode = org.lwjgl.glfw.GLFW.glfwGetKeyScancode(key);
+            String name = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, scancode);
+            if (name != null) return name.toUpperCase();
+            return switch (key) {
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE -> "SPACE";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT -> "LSHIFT";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT -> "RSHIFT";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL -> "LCTRL";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL -> "RCTRL";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT -> "LALT";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_ALT -> "RALT";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_TAB -> "TAB";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER -> "ENTER";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE -> "BACK";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_DELETE -> "DEL";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_INSERT -> "INS";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_HOME -> "HOME";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_END -> "END";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_UP -> "PGUP";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_DOWN -> "PGDN";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_CAPS_LOCK -> "CAPS";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_NUM_LOCK -> "NUM";
+                case org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE -> "ESC";
+                default -> "KEY_" + key;
+            };
+        } catch (Exception e) {
+            return "KEY_" + key;
+        }
     }
 
     /** 计算展开模块的设置区总高度。 */
@@ -201,9 +236,22 @@ public class ClickGuiScreen extends Screen {
         // 文字
         g.drawString(font, m.getName(), (int)px + 10, (int)curY + 7,
                 m.isEnabled() ? C_TEXT : C_DIM);
-        if (!m.getSettings().isEmpty())
-            g.drawString(font, expanded ? "▲" : "▼", (int)(px + PW - 14), (int)curY + 7,
+        
+        // 右侧显示按键
+        int rightOffset = 8;
+        if (!m.getSettings().isEmpty()) {
+            g.drawString(font, expanded ? "▲" : "▼", (int)(px + PW - rightOffset - 6), (int)curY + 7,
                     expanded ? C_ACCENT : C_DIM);
+            rightOffset += 16;
+        }
+        
+        if (m.getKey() > 0 || m == bindingModule) {
+            String keyName = m == bindingModule ? "..." : getKeyName(m.getKey());
+            String bracketed = "[" + keyName + "]";
+            int keyWidth = font.width(bracketed);
+            g.drawString(font, bracketed, (int)(px + PW - rightOffset - keyWidth), (int)curY + 7,
+                    m == bindingModule ? C_ACCENT : C_DIM);
+        }
 
         curY += MOD_H;
 
@@ -302,8 +350,14 @@ public class ClickGuiScreen extends Screen {
             float curY = p.y + HEADER;
             for (Module m : mods) {
                 if (hit(mx, my, p.x, curY, PW, MOD_H)) {
-                    if (btn == 0) m.toggle();         // 左键：切换开关
-                    if (btn == 1) toggleSettings(p, m); // 右键：展开设置
+                    boolean shift = hasShiftDown();
+                    if (btn == 0 && shift) {
+                        bindingModule = m;
+                    } else if (btn == 0) {
+                        m.toggle();
+                    } else if (btn == 1) {
+                        toggleSettings(p, m);
+                    }
                     return true;
                 }
                 curY += MOD_H;
@@ -410,6 +464,15 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (bindingModule != null) {
+            if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE || key == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE) {
+                bindingModule.setKey(org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
+            } else {
+                bindingModule.setKey(key);
+            }
+            bindingModule = null;
+            return true;
+        }
         if (key == 256) { onClose(); return true; }
         return super.keyPressed(key, scan, mods);
     }

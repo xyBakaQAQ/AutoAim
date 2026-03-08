@@ -1,5 +1,6 @@
 package com.xybaka.autoaim.modules;
 
+import com.xybaka.autoaim.config.ConfigManager;
 import com.xybaka.autoaim.modules.render.HUD;
 import com.xybaka.autoaim.modules.settings.Setting;
 import net.minecraft.client.Minecraft;
@@ -14,7 +15,7 @@ public abstract class Module {
     private final List<Setting> settings = new ArrayList<>();
     private final String name;
     private final Category category;
-    private final int key;
+    private int key;
     private boolean enabled;
 
     public Module(String name, Category category, int key) {
@@ -52,6 +53,7 @@ public abstract class Module {
         if (enabled) disable();
         else enable();
         HUD.push(this.getName(), this.enabled);
+        ConfigManager.instance.save();
     }
 
     public void enable() {
@@ -82,6 +84,11 @@ public abstract class Module {
 
     public int getKey() {
         return key;
+    }
+
+    public void setKey(int key) {
+        this.key = key;
+        ConfigManager.instance.save();
     }
 
     public boolean isEnabled() {

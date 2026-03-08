@@ -1,9 +1,9 @@
 package com.xybaka.autoaim.modules.movement;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
 import com.xybaka.autoaim.modules.settings.BooleanSetting;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import org.lwjgl.glfw.GLFW;
 

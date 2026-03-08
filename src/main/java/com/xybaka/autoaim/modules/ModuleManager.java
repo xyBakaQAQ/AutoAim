@@ -1,5 +1,6 @@
 package com.xybaka.autoaim.modules;
 
+import com.xybaka.autoaim.config.ConfigManager;
 import com.xybaka.autoaim.modules.combat.*;
 import com.xybaka.autoaim.modules.client.*;
 import com.xybaka.autoaim.modules.movement.*;
@@ -35,7 +36,17 @@ public class ModuleManager {
 
         modules.forEach(Module::init);
 
+        ConfigManager.instance.load();
+
         get(Target.class).enable();
+    }
+
+    public void saveConfig() {
+        ConfigManager.instance.save();
+    }
+
+    public void loadConfig() {
+        ConfigManager.instance.load();
     }
 
     public List<Module> getModules() {
