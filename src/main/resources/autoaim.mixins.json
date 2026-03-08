@@ -11,7 +11,8 @@
     "GameRendererMixin",
     "KeyboardInputMixin",
     "KeyMappingMixin",
-    "MinecraftMixin"
+    "MinecraftMixin",
+    "PlayerInfoMixin"
   ],
   "injectors": {
     "defaultRequire": 1

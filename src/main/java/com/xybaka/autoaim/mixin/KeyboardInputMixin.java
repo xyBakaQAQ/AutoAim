@@ -13,7 +13,7 @@ public class KeyboardInputMixin {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTick(boolean sneaking, float sneakSpeed, CallbackInfo ci) {
-        invMove mod = (invMove) ModuleManager.instance.getModuleByName("invMove");
+        invMove mod = ModuleManager.instance.get(invMove.class);
         if (mod != null) mod.tickKeys();
     }
 }

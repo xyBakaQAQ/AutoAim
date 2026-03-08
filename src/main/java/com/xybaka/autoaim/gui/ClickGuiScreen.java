@@ -7,6 +7,7 @@ import com.xybaka.autoaim.modules.settings.BooleanSetting;
 import com.xybaka.autoaim.modules.settings.EnumSetting;
 import com.xybaka.autoaim.modules.settings.NumberSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
+import com.xybaka.autoaim.modules.settings.StringSetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -43,6 +44,7 @@ public class ClickGuiScreen extends Screen {
     private float         dragBarW;
     
     private Module bindingModule = null;
+    private StringSetting editingString = null;
 
     // ────────────────────────── 尺寸常量 ──────────────────────────────────
 
@@ -51,6 +53,7 @@ public class ClickGuiScreen extends Screen {
     private static final int MOD_H   = 22;
     private static final int SET_H   = 28;
     private static final int ENUM_H  = 16;
+    private static final int STRING_H = 36;
     private static final int CORNER  = 4;
     private static final int BAR_PAD = 10;
     private static final int BAR_Y   = 18;
@@ -149,6 +152,8 @@ public class ClickGuiScreen extends Screen {
         for (Setting s : m.getSettings()) {
             if (s instanceof EnumSetting<?> e && s.getName().equals(p.openEnum)) {
                 h += 18 + e.getValues().length * ENUM_H + 6;
+            } else if (s instanceof StringSetting) {
+                h += STRING_H;
             } else {
                 h += SET_H;
             }
@@ -314,6 +319,26 @@ public class ClickGuiScreen extends Screen {
                     }
                     ry += 6;
                 }
+            } else if (s instanceof StringSetting str) {
+                boolean editing = str == editingString;
+                boolean hov = hit(mx, my, px + 6, ry + 14, PW - 12, 16);
+                g.drawString(font, s.getName(), (int)px + 10, (int)ry + 4, C_TEXT);
+                int boxY = (int)(ry + 14);
+                g.fill((int)(px + 6), boxY, (int)(px + PW - 6), boxY + 16, editing ? 0xFF2A2A40 : 0xFF1A1A28);
+                if (editing) {
+                    g.fill((int)(px + 6), boxY, (int)(px + 8), boxY + 16, C_ACCENT);
+                }
+                String displayText = str.getValue();
+                if (editing) {
+                    displayText = str.getValue() + "|";
+                } else if (displayText.isEmpty()) {
+                    displayText = "...";
+                    g.drawString(font, displayText, (int)px + 10, boxY + 4, C_DIM);
+                    ry += STRING_H;
+                    continue;
+                }
+                g.drawString(font, displayText, (int)px + 10, boxY + 4, editing ? C_TEXT : C_DIM);
+                ry += STRING_H;
             }
         }
     }
@@ -417,6 +442,12 @@ public class ClickGuiScreen extends Screen {
                     }
                     ry += 6;
                 }
+            } else if (s instanceof StringSetting str) {
+                if (hit(mx, my, px + 6, ry + 14, PW - 12, 16)) {
+                    editingString = (editingString == str) ? null : str;
+                    return;
+                }
+                ry += STRING_H;
             }
         }
     }
@@ -464,6 +495,22 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
+        if (editingString != null) {
+            if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+                editingString = null;
+                return true;
+            } else if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
+                editingString = null;
+                return true;
+            } else if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE) {
+                String val = editingString.getValue();
+                if (!val.isEmpty()) {
+                    editingString.setValue(val.substring(0, val.length() - 1));
+                }
+                return true;
+            }
+            return true;
+        }
         if (bindingModule != null) {
             if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE || key == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE) {
                 bindingModule.setKey(org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN);
@@ -475,5 +522,17 @@ public class ClickGuiScreen extends Screen {
         }
         if (key == 256) { onClose(); return true; }
         return super.keyPressed(key, scan, mods);
+    }
+
+    @Override
+    public boolean charTyped(char ch, int mods) {
+        if (editingString != null) {
+            String val = editingString.getValue();
+            if (val.length() < editingString.getMaxLength()) {
+                editingString.setValue(val + ch);
+            }
+            return true;
+        }
+        return super.charTyped(ch, mods);
     }
 }

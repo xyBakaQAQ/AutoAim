@@ -34,6 +34,7 @@ public class ModuleManager {
         modules.add(new FullBright());
         modules.add(new Camera());
         modules.add(new NoFov());
+        modules.add(new SkinOverlay());
 
         modules.forEach(Module::init);
         ConfigManager.instance.load(modules);

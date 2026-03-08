@@ -9,6 +9,7 @@ import com.xybaka.autoaim.modules.settings.BooleanSetting;
 import com.xybaka.autoaim.modules.settings.EnumSetting;
 import com.xybaka.autoaim.modules.settings.NumberSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
+import com.xybaka.autoaim.modules.settings.StringSetting;
 import net.minecraft.client.Minecraft;
 
 import java.io.File;
@@ -49,6 +50,8 @@ public class ConfigManager {
                     settingsJson.addProperty(ns.getName(), ns.getValue());
                 } else if (setting instanceof EnumSetting<?> es) {
                     settingsJson.addProperty(es.getName(), es.getValue().name());
+                } else if (setting instanceof StringSetting ss) {
+                    settingsJson.addProperty(ss.getName(), ss.getValue());
                 }
             }
             moduleJson.add("settings", settingsJson);
@@ -90,6 +93,8 @@ public class ConfigManager {
                             try {
                                 setEnumValue(es, settingsJson.get(es.getName()).getAsString());
                             } catch (Exception ignored) {}
+                        } else if (setting instanceof StringSetting ss) {
+                            ss.setValue(settingsJson.get(ss.getName()).getAsString());
                         }
                     }
                 }

@@ -18,7 +18,7 @@ public class MinecraftMixin {
             cancellable = true
     )
     private void onShouldEntityAppearGlowing(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        ESP esp = (ESP) ModuleManager.instance.getModuleByName("ESP");
+        ESP esp = ModuleManager.instance.get(ESP.class);
         if (esp != null && esp.shouldGlow(entity)) {
             cir.setReturnValue(true);
         }

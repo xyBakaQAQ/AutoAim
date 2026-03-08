@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 public abstract class KeyMappingMixin implements IForgeKeyMapping {
     @Override
     public boolean isConflictContextAndModifierActive() {
-        invMove mod = (invMove) ModuleManager.instance.getModuleByName("invMove");
+        invMove mod = ModuleManager.instance.get(invMove.class);
         if (mod != null && mod.isEnabled() && Module.mc.screen != null) {
             return true;
         }
