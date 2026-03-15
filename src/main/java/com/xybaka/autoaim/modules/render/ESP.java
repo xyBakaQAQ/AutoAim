@@ -2,6 +2,7 @@ package com.xybaka.autoaim.modules.render;
 
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
+import com.xybaka.autoaim.util.ColorsUtil;
 import com.xybaka.autoaim.util.TargetUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,5 +18,9 @@ public class ESP extends Module {
         if (!isEnabled()) return false;
         if (!(entity instanceof LivingEntity living)) return false;
         return TargetUtil.isValid(living);
+    }
+
+    public int getGlowColor(Entity entity) {
+        return ColorsUtil.getEspColor(entity);
     }
 }

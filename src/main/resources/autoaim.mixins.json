@@ -9,6 +9,7 @@
   ],
   "client": [
     "CameraMixin",
+    "EntityMixin",
     "GameRendererMixin",
     "KeyboardInputMixin",
     "KeyMappingMixin",
