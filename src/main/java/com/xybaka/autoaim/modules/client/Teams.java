@@ -3,14 +3,11 @@ package com.xybaka.autoaim.modules.client;
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
 import com.xybaka.autoaim.modules.settings.BooleanSetting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 import org.lwjgl.glfw.GLFW;
 
 public class Teams extends Module {
-
-    private final Minecraft mc = Minecraft.getInstance();
 
     public final BooleanSetting scoreboard = new BooleanSetting("Scoreboard", true);
     public final BooleanSetting colorCheck = new BooleanSetting("ColorCheck", false);

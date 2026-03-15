@@ -11,11 +11,13 @@ import com.xybaka.autoaim.modules.settings.NumberSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
 import com.xybaka.autoaim.modules.settings.StringSetting;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 
 public class ConfigManager {
@@ -34,13 +36,34 @@ public class ConfigManager {
         }
     }
 
+    private String keyToString(int key) {
+        if (key <= 0) return "NONE";
+        try {
+            for (Field f : GLFW.class.getDeclaredFields()) {
+                if (f.getName().startsWith("GLFW_KEY_") && f.getType() == int.class) {
+                    if (f.getInt(null) == key) return f.getName();
+                }
+            }
+        } catch (Exception ignored) {}
+        return "NONE";
+    }
+
+    private int stringToKey(String name) {
+        if (name == null || name.equals("NONE")) return -1;
+        try {
+            Field f = GLFW.class.getDeclaredField(name);
+            return f.getInt(null);
+        } catch (Exception ignored) {}
+        return -1;
+    }
+
     public void save(List<Module> modules) {
         JsonObject root = new JsonObject();
 
         for (Module module : modules) {
             JsonObject moduleJson = new JsonObject();
             moduleJson.addProperty("enabled", module.isEnabled());
-            moduleJson.addProperty("key", module.getKey());
+            moduleJson.addProperty("key", keyToString(module.getKey()));
 
             JsonObject settingsJson = new JsonObject();
             for (Setting setting : module.getSettings()) {
@@ -77,7 +100,7 @@ public class ConfigManager {
                 JsonObject moduleJson = root.getAsJsonObject(module.getName());
 
                 if (moduleJson.has("key")) {
-                    module.setKey(moduleJson.get("key").getAsInt());
+                    module.setKey(stringToKey(moduleJson.get("key").getAsString()));
                 }
 
                 if (moduleJson.has("settings")) {
