@@ -40,6 +40,18 @@ public class RotationUtil {
         silentActive = false;
     }
 
+    public static boolean isSilentActive() {
+        return silentActive;
+    }
+
+    public static float getSilentYaw() {
+        return silentYaw;
+    }
+
+    public static float getSilentPitch() {
+        return silentPitch;
+    }
+
     public static Packet<?> applySilentRotation(Packet<?> packet) {
         if (!(packet instanceof ServerboundMovePlayerPacket movePacket) || !silentActive) {
             return packet;

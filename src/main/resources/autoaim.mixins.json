@@ -12,6 +12,7 @@
     "GameRendererMixin",
     "KeyboardInputMixin",
     "KeyMappingMixin",
+    "LivingEntityRendererMixin",
     "MinecraftMixin",
     "PlayerInfoMixin"
   ],
