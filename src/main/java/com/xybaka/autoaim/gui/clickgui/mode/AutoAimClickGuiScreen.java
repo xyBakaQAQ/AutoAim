@@ -1,12 +1,12 @@
-package com.xybaka.autoaim.clickgui.mode;
+package com.xybaka.autoaim.gui.clickgui.mode;
 
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
 import com.xybaka.autoaim.modules.settings.BooleanSetting;
-import com.xybaka.autoaim.modules.settings.EnumSetting;
+import com.xybaka.autoaim.modules.settings.ModeSetting;
 import com.xybaka.autoaim.modules.settings.NumberSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
-import com.xybaka.autoaim.clickgui.ClickGuiManager;
+import com.xybaka.autoaim.gui.clickgui.ClickGuiManager;
 import com.xybaka.autoaim.modules.settings.StringSetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -151,7 +151,7 @@ public class AutoAimClickGuiScreen extends Screen {
     private void renderHeader(GuiGraphics g, int wx, int wy) {
         g.fill(wx, wy, wx + WIN_W, wy + HDR_H, C_HDR_BG);
 
-        String title = manager.getMode().name();
+        String title = manager.getMode();
         int titleX = wx + 12;
         int titleY = wy + (HDR_H - 8) / 2;
         for (int i = 0; i < title.length(); i++) {
@@ -318,7 +318,7 @@ public class AutoAimClickGuiScreen extends Screen {
                 g.fill(dotX - DOT_R + 2, by - 1, dotX + DOT_R - 2, by + BAR_H + 1, C_BAR_FG);
                 g.fill(dotX - DOT_R / 2, by - 2, dotX + DOT_R / 2, by + BAR_H + 2, gradColor(prog));
                 ry += SETTING_ROW_HEIGHT;
-            } else if (s instanceof EnumSetting<?> e) {
+            } else if (s instanceof ModeSetting<?> e) {
                 boolean open = manager.isEnumOpen(m, s);
                 boolean hov = hit(mx, my, rx + 2, ry, rowW - 4, 16);
                 if (hov) {
@@ -349,7 +349,7 @@ public class AutoAimClickGuiScreen extends Screen {
                 if (editing) {
                     fillGradientH(g, (int) (rx + 8), boxY, rowW - 16, 1, C_GRAD_L, C_GRAD_R);
                 }
-                String disp = str.getValue().isEmpty() && !editing ? "click to edit" : str.getValue() + (editing ? "|" : "");
+                String disp = str.getValue().isEmpty() && !editing ? "clickgui to edit" : str.getValue() + (editing ? "|" : "");
                 g.drawString(font, disp, (int) (rx + 12), boxY + 3, editing ? C_TEXT_SEL : C_TEXT_DIM, false);
                 ry += STRING_SETTING_HEIGHT;
             }
@@ -389,10 +389,6 @@ public class AutoAimClickGuiScreen extends Screen {
             return s;
         }
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
-    }
-
-    private static <T extends Enum<T>> void setEnum(EnumSetting<T> s, int i) {
-        s.setValue(s.getValues()[i]);
     }
 
     @Override
@@ -472,7 +468,7 @@ public class AutoAimClickGuiScreen extends Screen {
                     return;
                 }
                 ry += SETTING_ROW_HEIGHT;
-            } else if (s instanceof EnumSetting<?> e) {
+            } else if (s instanceof ModeSetting<?> e) {
                 if (hit(mx, my, rx + 2, ry, rowW - 4, 16)) {
                     manager.toggleOpenEnum(m, s);
                     return;
@@ -481,7 +477,7 @@ public class AutoAimClickGuiScreen extends Screen {
                 if (manager.isEnumOpen(m, s)) {
                     for (int i = 0; i < e.getValues().length; i++) {
                         if (hit(mx, my, rx + 6, ry, rowW - 12, ENUM_ROW_HEIGHT)) {
-                            setEnum(e, i);
+                            e.setValueByIndex(i);
                             return;
                         }
                         ry += ENUM_ROW_HEIGHT;

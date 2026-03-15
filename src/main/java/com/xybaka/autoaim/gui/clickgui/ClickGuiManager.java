@@ -1,10 +1,10 @@
-package com.xybaka.autoaim.clickgui;
+package com.xybaka.autoaim.gui.clickgui;
 
-import com.xybaka.autoaim.clickgui.mode.AutoAimClickGuiScreen;
+import com.xybaka.autoaim.gui.clickgui.mode.AutoAimClickGuiScreen;
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
 import com.xybaka.autoaim.modules.ModuleManager;
-import com.xybaka.autoaim.modules.settings.EnumSetting;
+import com.xybaka.autoaim.modules.settings.ModeSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
 import com.xybaka.autoaim.modules.settings.StringSetting;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,11 +16,7 @@ import java.util.Map;
 public final class ClickGuiManager {
     private static final float SCROLL_STEP = 8.0f;
 
-    public enum Mode {
-        AutoAim
-    }
-
-    private final Mode mode;
+    private final String mode;
     private Category selectedCategory = Category.values()[0];
     private final Map<Module, Float> slideAnimations = new HashMap<>();
     private final Map<Module, String> openEnums = new HashMap<>();
@@ -29,17 +25,18 @@ public final class ClickGuiManager {
     private float scrollOffset;
     private float scrollTarget;
 
-    public ClickGuiManager(Mode mode) {
+    public ClickGuiManager(String mode) {
         this.mode = mode;
     }
 
-    public Mode getMode() {
+    public String getMode() {
         return mode;
     }
 
     public Screen createScreen() {
         return switch (mode) {
-            case AutoAim -> new AutoAimClickGuiScreen(this);
+            case "AutoAim" -> new AutoAimClickGuiScreen(this);
+            default -> new AutoAimClickGuiScreen(this);
         };
     }
 
@@ -173,7 +170,7 @@ public final class ClickGuiManager {
         String openEnum = openEnums.get(module);
         int h = 6;
         for (Setting setting : module.getSettings()) {
-            if (setting instanceof EnumSetting<?> enumSetting && setting.getName().equals(openEnum)) {
+            if (setting instanceof ModeSetting<?> enumSetting && setting.getName().equals(openEnum)) {
                 h += 16 + enumSetting.getValues().length * AutoAimClickGuiScreen.ENUM_ROW_HEIGHT + 4;
             } else if (setting instanceof StringSetting) {
                 h += AutoAimClickGuiScreen.STRING_SETTING_HEIGHT;

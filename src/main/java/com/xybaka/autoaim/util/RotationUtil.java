@@ -52,6 +52,14 @@ public class RotationUtil {
         return silentPitch;
     }
 
+    public static float getEffectiveYaw() {
+        return silentActive ? silentYaw : mc.player != null ? mc.player.getYRot() : 0.0F;
+    }
+
+    public static float getEffectivePitch() {
+        return silentActive ? silentPitch : mc.player != null ? mc.player.getXRot() : 0.0F;
+    }
+
     public static Packet<?> applySilentRotation(Packet<?> packet) {
         if (!(packet instanceof ServerboundMovePlayerPacket movePacket) || !silentActive) {
             return packet;

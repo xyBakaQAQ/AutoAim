@@ -5,8 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.xybaka.autoaim.modules.Module;
+import com.xybaka.autoaim.modules.render.TargetHud;
 import com.xybaka.autoaim.modules.settings.BooleanSetting;
-import com.xybaka.autoaim.modules.settings.EnumSetting;
+import com.xybaka.autoaim.modules.settings.ModeSetting;
 import com.xybaka.autoaim.modules.settings.NumberSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
 import com.xybaka.autoaim.modules.settings.StringSetting;
@@ -65,14 +66,19 @@ public class ConfigManager {
             moduleJson.addProperty("enabled", module.isEnabled());
             moduleJson.addProperty("key", keyToString(module.getKey()));
 
+            if (module instanceof TargetHud targetHud) {
+                moduleJson.addProperty("hudX", targetHud.getStoredX());
+                moduleJson.addProperty("hudY", targetHud.getStoredY());
+            }
+
             JsonObject settingsJson = new JsonObject();
             for (Setting setting : module.getSettings()) {
                 if (setting instanceof BooleanSetting bs) {
                     settingsJson.addProperty(bs.getName(), bs.isEnabled());
                 } else if (setting instanceof NumberSetting ns) {
                     settingsJson.addProperty(ns.getName(), ns.getValue());
-                } else if (setting instanceof EnumSetting<?> es) {
-                    settingsJson.addProperty(es.getName(), es.getValue().name());
+                } else if (setting instanceof ModeSetting<?> ms) {
+                    settingsJson.addProperty(ms.getName(), ms.getDisplayName());
                 } else if (setting instanceof StringSetting ss) {
                     settingsJson.addProperty(ss.getName(), ss.getValue());
                 }
@@ -103,6 +109,12 @@ public class ConfigManager {
                     module.setKey(stringToKey(moduleJson.get("key").getAsString()));
                 }
 
+                if (module instanceof TargetHud targetHud) {
+                    int hudX = moduleJson.has("hudX") ? moduleJson.get("hudX").getAsInt() : targetHud.getStoredX();
+                    int hudY = moduleJson.has("hudY") ? moduleJson.get("hudY").getAsInt() : targetHud.getStoredY();
+                    targetHud.setStoredPosition(hudX, hudY);
+                }
+
                 if (moduleJson.has("settings")) {
                     JsonObject settingsJson = moduleJson.getAsJsonObject("settings");
                     for (Setting setting : module.getSettings()) {
@@ -112,10 +124,8 @@ public class ConfigManager {
                             bs.setEnabled(settingsJson.get(bs.getName()).getAsBoolean());
                         } else if (setting instanceof NumberSetting ns) {
                             ns.setValue(settingsJson.get(ns.getName()).getAsDouble());
-                        } else if (setting instanceof EnumSetting<?> es) {
-                            try {
-                                setEnumValue(es, settingsJson.get(es.getName()).getAsString());
-                            } catch (Exception ignored) {}
+                        } else if (setting instanceof ModeSetting<?> ms) {
+                            ms.setValueByName(settingsJson.get(ms.getName()).getAsString());
                         } else if (setting instanceof StringSetting ss) {
                             ss.setValue(settingsJson.get(ss.getName()).getAsString());
                         }
@@ -131,17 +141,11 @@ public class ConfigManager {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends Enum<T>> void setEnumValue(EnumSetting<T> setting, String name) {
-        for (T value : setting.getValues()) {
-            if (value.name().equals(name)) {
-                setting.setValue(value);
-                break;
-            }
-        }
-    }
-
     public File getConfigFile() {
         return configFile;
+    }
+
+    public File getConfigDir() {
+        return configDir;
     }
 }

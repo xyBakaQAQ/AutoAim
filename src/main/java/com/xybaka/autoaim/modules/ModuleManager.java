@@ -29,6 +29,7 @@ public class ModuleManager {
         modules.add(new invMove());
         //Render
         modules.add(new HUD());
+        modules.add(new TargetHud());
         modules.add(new ClickGUI());
         modules.add(new ESP());
         modules.add(new FullBright());

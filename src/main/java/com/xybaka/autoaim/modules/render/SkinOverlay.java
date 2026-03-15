@@ -1,29 +1,33 @@
 package com.xybaka.autoaim.modules.render;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.blaze3d.platform.NativeImage;
+import com.xybaka.autoaim.config.ConfigManager;
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
 import com.xybaka.autoaim.modules.settings.BooleanSetting;
 import com.xybaka.autoaim.modules.settings.StringSetting;
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
+import org.lwjgl.glfw.GLFW;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.UUID;
-
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.lwjgl.glfw.GLFW;
+import java.util.function.Consumer;
 
 public class SkinOverlay extends Module {
 
     public final StringSetting playerName = new StringSetting("PlayerName", "");
-    public final BooleanSetting loadCape = new BooleanSetting("LoadCape", true); // 加这行
+    public final BooleanSetting loadCape = new BooleanSetting("LoadCape", true);
 
     private ResourceLocation customSkinLocation = null;
     private boolean isSkinLoaded = false;
@@ -55,25 +59,41 @@ public class SkinOverlay extends Module {
             try {
                 HttpClient client = HttpClient.newHttpClient();
 
-                // 1. 用户名 → UUID
                 HttpRequest uuidReq = HttpRequest.newBuilder()
                         .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + username))
                         .build();
                 HttpResponse<String> uuidRes = client.send(uuidReq, HttpResponse.BodyHandlers.ofString());
-                if (uuidRes.statusCode() != 200) return;
+                if (uuidRes.statusCode() != 200) {
+                    return;
+                }
 
                 JsonObject uuidJson = JsonParser.parseString(uuidRes.body()).getAsJsonObject();
-                String uuid = uuidJson.get("id").getAsString();
+                String playerId = uuidJson.get("id").getAsString();
+                File cachedSkinFile = getCachedTextureFile(playerId, "skin");
+                File cachedCapeFile = getCachedTextureFile(playerId, "cape");
+                boolean shouldLoadCape = loadCape.isEnabled();
+
+                if (cachedSkinFile.isFile()) {
+                    loadTextureFromFile(cachedSkinFile, "skin/" + playerId, location -> customSkinLocation = location, () -> isSkinLoaded = true);
+                }
+                if (shouldLoadCape && cachedCapeFile.isFile()) {
+                    loadTextureFromFile(cachedCapeFile, "cape/" + playerId, location -> customCloakLocation = location, () -> isCloakLoaded = true);
+                }
+                if (cachedSkinFile.isFile() && (!shouldLoadCape || cachedCapeFile.isFile())) {
+                    return;
+                }
+
                 String formattedUUID = UUID.fromString(
-                        uuid.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5")
+                        playerId.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5")
                 ).toString();
 
-                // 2. UUID → 皮肤URL
                 HttpRequest profileReq = HttpRequest.newBuilder()
                         .uri(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + formattedUUID))
                         .build();
                 HttpResponse<String> profileRes = client.send(profileReq, HttpResponse.BodyHandlers.ofString());
-                if (profileRes.statusCode() != 200) return;
+                if (profileRes.statusCode() != 200) {
+                    return;
+                }
 
                 JsonObject profileJson = JsonParser.parseString(profileRes.body()).getAsJsonObject();
                 String base64 = profileJson.getAsJsonArray("properties")
@@ -81,59 +101,72 @@ public class SkinOverlay extends Module {
                         .get("value").getAsString();
                 String decoded = new String(Base64.getDecoder().decode(base64));
                 JsonObject textureJson = JsonParser.parseString(decoded).getAsJsonObject();
+                JsonObject textures = textureJson.getAsJsonObject("textures");
 
-                // 3. 下载皮肤
-                String skinUrl = textureJson.getAsJsonObject("textures")
-                        .getAsJsonObject("SKIN")
-                        .get("url").getAsString();
-
-                HttpRequest skinReq = HttpRequest.newBuilder()
-                        .uri(URI.create(skinUrl))
-                        .build();
-                HttpResponse<InputStream> skinRes = client.send(skinReq, HttpResponse.BodyHandlers.ofInputStream());
-                if (skinRes.statusCode() == 200) {
-                    InputStream skinStream = skinRes.body();
-                    mc.execute(() -> {
-                        try {
-                            NativeImage image = NativeImage.read(skinStream);
-                            DynamicTexture texture = new DynamicTexture(image);
-                            ResourceLocation location = new ResourceLocation("autoaim", "skin/" + username.toLowerCase());
-                            mc.getTextureManager().register(location, texture);
-                            customSkinLocation = location;
-                            isSkinLoaded = true;
-                        } catch (Exception ignored) {}
-                    });
-                }
-
-                // 4. 下载披风
-                if (loadCape.isEnabled() && textureJson.getAsJsonObject("textures").has("CAPE")) {
-                    String capeUrl = textureJson.getAsJsonObject("textures")
-                            .getAsJsonObject("CAPE")
-                            .get("url").getAsString();
-
-                    HttpRequest capeReq = HttpRequest.newBuilder()
-                            .uri(URI.create(capeUrl))
-                            .build();
-                    HttpResponse<InputStream> capeRes = client.send(capeReq, HttpResponse.BodyHandlers.ofInputStream());
-                    if (capeRes.statusCode() == 200) {
-                        InputStream capeStream = capeRes.body();
-                        mc.execute(() -> {
-                            try {
-                                NativeImage capeImage = NativeImage.read(capeStream);
-                                DynamicTexture capeTexture = new DynamicTexture(capeImage);
-                                ResourceLocation capeLocation = new ResourceLocation("autoaim", "cape/" + username.toLowerCase());
-                                mc.getTextureManager().register(capeLocation, capeTexture);
-                                customCloakLocation = capeLocation;
-                                isCloakLoaded = true;
-                            } catch (Exception ignored) {}
-                        });
+                if (!cachedSkinFile.isFile() && textures.has("SKIN")) {
+                    String skinUrl = textures.getAsJsonObject("SKIN").get("url").getAsString();
+                    if (downloadTexture(client, skinUrl, cachedSkinFile)) {
+                        loadTextureFromFile(cachedSkinFile, "skin/" + playerId, location -> customSkinLocation = location, () -> isSkinLoaded = true);
                     }
                 }
 
-            } catch (Exception ignored) {}
+                if (shouldLoadCape && !cachedCapeFile.isFile() && textures.has("CAPE")) {
+                    String capeUrl = textures.getAsJsonObject("CAPE").get("url").getAsString();
+                    if (downloadTexture(client, capeUrl, cachedCapeFile)) {
+                        loadTextureFromFile(cachedCapeFile, "cape/" + playerId, location -> customCloakLocation = location, () -> isCloakLoaded = true);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         }, "SkinFetcher");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private File getSkinCacheDir() {
+        File cacheDir = new File(ConfigManager.instance.getConfigDir(), "Skin");
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs();
+        }
+        return cacheDir;
+    }
+
+    private File getCachedTextureFile(String playerId, String textureType) {
+        return new File(getSkinCacheDir(), playerId + "_" + textureType + ".png");
+    }
+
+    private boolean downloadTexture(HttpClient client, String textureUrl, File outputFile) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(textureUrl))
+                    .build();
+            HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if (response.statusCode() != 200) {
+                return false;
+            }
+
+            Files.createDirectories(outputFile.toPath().getParent());
+            try (InputStream stream = response.body()) {
+                Files.copy(stream, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private void loadTextureFromFile(File textureFile, String resourcePath, Consumer<ResourceLocation> locationConsumer, Runnable loadedCallback) {
+        mc.execute(() -> {
+            try (InputStream stream = Files.newInputStream(textureFile.toPath())) {
+                NativeImage image = NativeImage.read(stream);
+                DynamicTexture texture = new DynamicTexture(image);
+                ResourceLocation location = new ResourceLocation("autoaim", resourcePath);
+                mc.getTextureManager().register(location, texture);
+                locationConsumer.accept(location);
+                loadedCallback.run();
+            } catch (Exception ignored) {
+            }
+        });
     }
 
     public ResourceLocation getCustomSkinLocation() { return customSkinLocation; }

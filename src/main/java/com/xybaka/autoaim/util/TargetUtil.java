@@ -6,7 +6,11 @@ import com.xybaka.autoaim.modules.client.Teams;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ambient.AmbientCreature;
-import net.minecraft.world.entity.animal.*;
+import net.minecraft.world.entity.animal.AbstractFish;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.SnowGolem;
+import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
@@ -30,17 +34,18 @@ public class TargetUtil {
                 .stream()
                 .filter(LivingEntity.class::isInstance)
                 .map(LivingEntity.class::cast)
-                .filter(e -> isValid(e, t))  // 传入 t，避免重复获取
+                .filter(e -> isValid(e, t))
                 .filter(e -> mc.player.distanceTo(e) <= range)
                 .min(getComparator(t.mode.getValue()))
                 .orElse(null);
     }
 
-    private static Comparator<LivingEntity> getComparator(Target.Mode mode) {
+    private static Comparator<LivingEntity> getComparator(String mode) {
         return switch (mode) {
-            case CLOSEST -> Comparator.comparingDouble(e -> mc.player.distanceTo(e));
-            case LOWEST_HEALTH -> Comparator.comparingDouble(LivingEntity::getHealth);
-            case FOV -> Comparator.comparingDouble(TargetUtil::getFovAngle);
+            case "Health" -> Comparator.comparingDouble(LivingEntity::getHealth);
+            case "FOV" -> Comparator.comparingDouble(TargetUtil::getFovAngle);
+            case "Distance" -> Comparator.comparingDouble(e -> mc.player.distanceTo(e));
+            default -> Comparator.comparingDouble(e -> mc.player.distanceTo(e));
         };
     }
 

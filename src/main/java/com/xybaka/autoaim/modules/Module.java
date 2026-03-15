@@ -2,6 +2,7 @@ package com.xybaka.autoaim.modules;
 
 import com.xybaka.autoaim.config.ConfigManager;
 import com.xybaka.autoaim.modules.render.HUD;
+import com.xybaka.autoaim.modules.settings.ModeSetting;
 import com.xybaka.autoaim.modules.settings.Setting;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.common.MinecraftForge;
@@ -29,18 +30,22 @@ public abstract class Module {
         setupSettings();
     }
 
+    protected final ModeSetting<String> mode(String name, String defaultValue, String... values) {
+        return new ModeSetting<>(name, defaultValue, values);
+    }
+
 
     private void setupSettings() {
         try {
-            // 获取当前具体子类中声明的所有字段
+            // 鑾峰彇褰撳墠鍏蜂綋瀛愮被涓０鏄庣殑鎵€鏈夊瓧娈?
             for (Field field : this.getClass().getDeclaredFields()) {
-                // 判断字段类型是否是 Setting 或其子类
+                // 鍒ゆ柇瀛楁绫诲瀷鏄惁鏄?Setting 鎴栧叾瀛愮被
                 if (Setting.class.isAssignableFrom(field.getType())) {
                     field.setAccessible(true);
                     Object obj = field.get(this);
                     if (obj instanceof Setting s) {
-                        s.setParent(this); // 自动绑定父模块
-                        this.settings.add(s); // 添加到列表
+                        s.setParent(this); // 鑷姩缁戝畾鐖舵ā鍧?
+                        this.settings.add(s); // 娣诲姞鍒板垪琛?
                     }
                 }
             }

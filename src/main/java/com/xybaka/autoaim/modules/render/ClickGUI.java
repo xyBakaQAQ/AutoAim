@@ -1,13 +1,13 @@
 package com.xybaka.autoaim.modules.render;
 
-import com.xybaka.autoaim.clickgui.ClickGuiManager;
+import com.xybaka.autoaim.gui.clickgui.ClickGuiManager;
 import com.xybaka.autoaim.modules.Category;
 import com.xybaka.autoaim.modules.Module;
-import com.xybaka.autoaim.modules.settings.EnumSetting;
+import com.xybaka.autoaim.modules.settings.ModeSetting;
 import org.lwjgl.glfw.GLFW;
 
 public class ClickGUI extends Module {
-    public final EnumSetting<ClickGuiManager.Mode> mode = new EnumSetting<>("Mode", ClickGuiManager.Mode.AutoAim);
+    public final ModeSetting<String> mode = mode("Mode", "AutoAim", "AutoAim");
 
     public ClickGUI() {
         super("ClickGUI", Category.RENDER, GLFW.GLFW_KEY_RIGHT_SHIFT);
@@ -20,4 +20,3 @@ public class ClickGUI extends Module {
         this.disable();
     }
 }
-
