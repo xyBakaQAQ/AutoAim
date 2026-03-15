@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "autoaim.refmap.json",
   "mixins": [
+    "ConnectionMixin"
   ],
   "client": [
     "CameraMixin",

@@ -6,7 +6,6 @@ import com.xybaka.autoaim.modules.settings.BooleanSetting;
 import com.xybaka.autoaim.modules.settings.NumberSetting;
 import com.xybaka.autoaim.util.RotationUtil;
 import com.xybaka.autoaim.util.TargetUtil;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -20,20 +19,31 @@ public class AutoAim extends Module {
         super("AutoAim", Category.COMBAT, GLFW.GLFW_KEY_G);
     }
 
+    @Override
+    public void onDisable() {
+        RotationUtil.clearSilentRotation();
+    }
+
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (!isEnabled() || mc.player == null || event.phase != TickEvent.Phase.START) return;
+        if (!isEnabled() || mc.player == null || event.phase != TickEvent.Phase.START) {
+            return;
+        }
 
         LivingEntity target = TargetUtil.getBestTarget(range.getValue());
-        if (target == null) return;
+        if (target == null) {
+            RotationUtil.clearSilentRotation();
+            return;
+        }
 
         float[] rotations = RotationUtil.getRotationsToEntity(target);
         float yaw = rotations[0];
         float pitch = rotations[1];
 
         if (silent.isEnabled()) {
-            mc.player.connection.send(new ServerboundMovePlayerPacket.Rot(yaw, pitch, mc.player.onGround()));
+            RotationUtil.setSilentRotation(yaw, pitch);
         } else {
+            RotationUtil.clearSilentRotation();
             mc.player.setYRot(yaw);
             mc.player.setXRot(pitch);
         }
