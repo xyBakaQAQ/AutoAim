@@ -3,7 +3,7 @@ package com.xybaka.autoaim.mixin;
 import com.xybaka.autoaim.modules.ModuleManager;
 import com.xybaka.autoaim.modules.render.Camera;
 import com.xybaka.autoaim.modules.render.NoFov;
-import com.xybaka.autoaim.util.RotationUtil;
+import com.xybaka.autoaim.util.rotation.RotationManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.Entity;
@@ -45,7 +45,7 @@ public class GameRendererMixin {
 
     @Inject(method = "pick", at = @At("HEAD"))
     private void onPickHead(float partialTick, CallbackInfo ci) {
-        if (!RotationUtil.isSilentActive()) {
+        if (!RotationManager.isSilentActive()) {
             autoAim$restoringSilentPick = false;
             return;
         }
@@ -63,8 +63,8 @@ public class GameRendererMixin {
         autoAim$pickYawO = cameraEntity.yRotO;
         autoAim$pickPitchO = cameraEntity.xRotO;
 
-        float yaw = RotationUtil.getEffectiveYaw();
-        float pitch = RotationUtil.getEffectivePitch();
+        float yaw = RotationManager.getEffectiveYaw();
+        float pitch = RotationManager.getEffectivePitch();
         cameraEntity.setYRot(yaw);
         cameraEntity.setXRot(pitch);
         cameraEntity.yRotO = yaw;

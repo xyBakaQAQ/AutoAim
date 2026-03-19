@@ -37,15 +37,13 @@ public abstract class Module {
 
     private void setupSettings() {
         try {
-            // 鑾峰彇褰撳墠鍏蜂綋瀛愮被涓０鏄庣殑鎵€鏈夊瓧娈?
             for (Field field : this.getClass().getDeclaredFields()) {
-                // 鍒ゆ柇瀛楁绫诲瀷鏄惁鏄?Setting 鎴栧叾瀛愮被
                 if (Setting.class.isAssignableFrom(field.getType())) {
                     field.setAccessible(true);
                     Object obj = field.get(this);
                     if (obj instanceof Setting s) {
-                        s.setParent(this); // 鑷姩缁戝畾鐖舵ā鍧?
-                        this.settings.add(s); // 娣诲姞鍒板垪琛?
+                        s.setParent(this);
+                        this.settings.add(s);
                     }
                 }
             }

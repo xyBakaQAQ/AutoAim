@@ -14,6 +14,8 @@ import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Comparator;
@@ -26,6 +28,10 @@ public class TargetUtil {
     }
 
     public static LivingEntity getBestTarget(double range) {
+        return getBestTarget(range, false);
+    }
+
+    public static LivingEntity getBestTarget(double range, boolean visibleCheck) {
         if (mc.level == null || mc.player == null) return null;
         Target t = getTargetModule();
         if (t == null) return null;
@@ -36,6 +42,7 @@ public class TargetUtil {
                 .map(LivingEntity.class::cast)
                 .filter(e -> isValid(e, t))
                 .filter(e -> mc.player.distanceTo(e) <= range)
+                .filter(e -> !visibleCheck || canSeeTarget(e, t))
                 .min(getComparator(t.mode.getValue()))
                 .orElse(null);
     }
@@ -51,10 +58,42 @@ public class TargetUtil {
 
     private static double getFovAngle(LivingEntity entity) {
         Vec3 look = mc.player.getLookAngle();
-        Vec3 toEntity = entity.getEyePosition()
+        Vec3 toEntity = getAimPosition(entity)
                 .subtract(mc.player.getEyePosition())
                 .normalize();
         return -look.dot(toEntity);
+    }
+
+    public static Vec3 getAimPosition(LivingEntity entity) {
+        Target t = getTargetModule();
+        return getAimPosition(entity, t);
+    }
+
+    private static Vec3 getAimPosition(LivingEntity entity, Target t) {
+        double y = switch (t != null ? t.aimPart.getValue() : "Head") {
+            case "Body" -> entity.getBoundingBox().minY + entity.getBbHeight() * 0.5D;
+            case "Feet" -> entity.getBoundingBox().minY + entity.getBbHeight() * 0.1D;
+            default -> entity.getY() + entity.getEyeHeight();
+        };
+        return new Vec3(entity.getX(), y, entity.getZ());
+    }
+
+    public static boolean canSeeTarget(LivingEntity entity) {
+        Target t = getTargetModule();
+        return t != null && canSeeTarget(entity, t);
+    }
+
+    private static boolean canSeeTarget(LivingEntity entity, Target t) {
+        Vec3 start = mc.player.getEyePosition(1.0F);
+        Vec3 end = getAimPosition(entity, t);
+        HitResult hitResult = mc.level.clip(new ClipContext(
+                start,
+                end,
+                ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE,
+                mc.player
+        ));
+        return hitResult.getType() == HitResult.Type.MISS;
     }
 
     public static boolean isValid(LivingEntity entity) {

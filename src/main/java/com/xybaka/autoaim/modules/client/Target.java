@@ -8,6 +8,7 @@ import org.lwjgl.glfw.GLFW;
 
 public class Target extends Module {
     public final ModeSetting<String> mode = mode("Mode", "Distance", "Distance", "Health", "FOV");
+    public final ModeSetting<String> aimPart = mode("Aim Part", "Head", "Head", "Body", "Feet");
     public final BooleanSetting players = new BooleanSetting("Players", true);
     public final BooleanSetting monsters = new BooleanSetting("Monsters", true);
     public final BooleanSetting animals = new BooleanSetting("Animals", false);

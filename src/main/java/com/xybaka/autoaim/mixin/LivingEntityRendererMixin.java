@@ -1,6 +1,6 @@
 package com.xybaka.autoaim.mixin;
 
-import com.xybaka.autoaim.util.RotationUtil;
+import com.xybaka.autoaim.util.rotation.RotationManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -21,8 +21,8 @@ public class LivingEntityRendererMixin {
                                    com.mojang.blaze3d.vertex.PoseStack poseStack,
                                    MultiBufferSource buffer,
                                    int packedLight) {
-        if (entity == Minecraft.getInstance().player && RotationUtil.isSilentActive()) {
-            float yaw = RotationUtil.getSilentYaw();
+        if (entity == Minecraft.getInstance().player && RotationManager.isSilentActive()) {
+            float yaw = RotationManager.getSilentYaw();
             return Mth.rotLerp(partialTicks, yaw, yaw);
         }
 
@@ -37,8 +37,8 @@ public class LivingEntityRendererMixin {
                                    com.mojang.blaze3d.vertex.PoseStack poseStack,
                                    MultiBufferSource buffer,
                                    int packedLight) {
-        if (entity == Minecraft.getInstance().player && RotationUtil.isSilentActive()) {
-            float yaw = RotationUtil.getSilentYaw();
+        if (entity == Minecraft.getInstance().player && RotationManager.isSilentActive()) {
+            float yaw = RotationManager.getSilentYaw();
             return Mth.rotLerp(partialTicks, yaw, yaw);
         }
 
@@ -53,8 +53,8 @@ public class LivingEntityRendererMixin {
                                      com.mojang.blaze3d.vertex.PoseStack poseStack,
                                      MultiBufferSource buffer,
                                      int packedLight) {
-        if (entity == Minecraft.getInstance().player && RotationUtil.isSilentActive()) {
-            float pitch = RotationUtil.getSilentPitch();
+        if (entity == Minecraft.getInstance().player && RotationManager.isSilentActive()) {
+            float pitch = RotationManager.getSilentPitch();
             return Mth.lerp(partialTicks, pitch, pitch);
         }
 
